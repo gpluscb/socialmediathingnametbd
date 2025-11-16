@@ -47,7 +47,6 @@ macro_rules! snowflake_part {
 
 macro_rules! __snowflake_part_impls {
     ($name:ident<$($generic:ident)?>: $repr:ty = snowflake & $bitmask:literal) => {
-
         impl$(<$generic>)? $name$(<$generic>)? {
             const SNOWFLAKE_BITMASK: u64 = $bitmask;
             const SNOWFLAKE_OFFSET: u64 = Self::SNOWFLAKE_BITMASK.trailing_zeros() as u64;

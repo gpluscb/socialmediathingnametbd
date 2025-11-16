@@ -12,7 +12,7 @@ with a strong tagging and reblog-style comment system.
 
 We oppose algorithmic feeds and instead want to give more tools to users to customise their feeds while keeping them
 deterministic and predictable.
-Ensuring independence from commercial intersts is also important to us and we would love to get federation working.
+Ensuring independence from commercial interests is also important to us, and we would love to get federation working.
 
 ## Current Status
 
