@@ -1,6 +1,5 @@
 use crate::record::{AuthenticationRecord, PartialPostRecord, PostRecord, UserRecord};
 use sqlx::{PgPool, migrate, migrate::MigrateError, query, query_as, query_scalar};
-use std::sync::nonpoison::Mutex;
 use stellwerk_common::{
     model::{
         Id, ModelValidationError, StellwerkSnowflakeGenerator,
@@ -28,7 +27,7 @@ pub enum DbError {
 #[derive(Debug)]
 pub struct DbClient {
     pool: PgPool,
-    snowflake_generator: Mutex<StellwerkSnowflakeGenerator>,
+    snowflake_generator: StellwerkSnowflakeGenerator,
 }
 
 impl DbClient {
@@ -45,8 +44,7 @@ impl DbClient {
 
     #[must_use]
     pub fn new(pool: PgPool, worker_id: WorkerId, process_id: ProcessId) -> Self {
-        let snowflake_generator =
-            Mutex::new(StellwerkSnowflakeGenerator::new(worker_id, process_id));
+        let snowflake_generator = StellwerkSnowflakeGenerator::new(worker_id, process_id);
 
         Self {
             pool,
@@ -144,7 +142,7 @@ impl DbClient {
     }
 
     pub async fn create_user(&self, user: &CreateUser) -> Result<Id<UserMarker>> {
-        let user_snowflake = self.snowflake_generator.lock().generate();
+        let user_snowflake = self.snowflake_generator.generate();
 
         let returned_snowflake = query_scalar!(
             "
@@ -192,7 +190,7 @@ impl DbClient {
         content: &PostContent,
         author: Id<UserMarker>,
     ) -> Result<PartialPost> {
-        let post_snowflake = self.snowflake_generator.lock().generate();
+        let post_snowflake = self.snowflake_generator.generate();
 
         let returned_record = query_as!(
             PartialPostRecord,
