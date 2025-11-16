@@ -10,6 +10,7 @@ use serde::{
 use std::{
     fmt::{Debug, Display, Formatter},
     marker::PhantomData,
+    sync::atomic::{AtomicU16, Ordering},
 };
 use thiserror::Error;
 use time::{Duration, UtcDateTime};
@@ -120,17 +121,6 @@ snowflake_part!(SnowflakeTimestamp<SnowflakeEpoch>: u64 = snowflake & 0xFFFF_FFF
 )]
 #[serde(transparent)]
 pub struct Snowflake<SnowflakeEpoch>(u64, #[serde(skip)] PhantomData<SnowflakeEpoch>);
-
-impl SnowflakeIncrement {
-    #[must_use]
-    pub fn next(self) -> Self {
-        Self((self.0 + 1) % (1 << Self::BIT_COUNT))
-    }
-
-    pub fn increment(&mut self) {
-        *self = self.next();
-    }
-}
 
 impl<SnowflakeEpoch> SnowflakeTimestamp<SnowflakeEpoch> {
     #[must_use]
@@ -259,11 +249,11 @@ impl<SnowflakeEpoch> From<Snowflake<SnowflakeEpoch>> for u64 {
     }
 }
 
-#[derive_where(Copy, Clone, Eq, PartialEq, Debug, Default, Hash)]
+#[derive_where(Debug, Default)]
 pub struct SnowflakeGenerator<SnowflakeEpoch> {
     worker_id: WorkerId,
     process_id: ProcessId,
-    next_increment: SnowflakeIncrement,
+    count: AtomicU16,
     phantom_data: PhantomData<SnowflakeEpoch>,
 }
 
@@ -273,7 +263,7 @@ impl<SnowflakeEpoch> SnowflakeGenerator<SnowflakeEpoch> {
         Self {
             worker_id,
             process_id,
-            next_increment: SnowflakeIncrement::new_unchecked(0),
+            count: AtomicU16::new(0),
             phantom_data: PhantomData,
         }
     }
@@ -289,27 +279,31 @@ impl<SnowflakeEpoch> SnowflakeGenerator<SnowflakeEpoch> {
     }
 
     #[must_use]
-    pub fn generate_at(&mut self, time: UtcDateTime) -> Snowflake<SnowflakeEpoch>
+    pub fn generate_at(&self, time: UtcDateTime) -> Snowflake<SnowflakeEpoch>
     where
         SnowflakeEpoch: Epoch,
     {
-        let increment = self.next_increment;
-        self.next_increment.increment();
-
         Snowflake::from_parts(
             SnowflakeTimestamp::from_time_unchecked(time),
             self.worker_id,
             self.process_id,
-            increment,
+            self.generate_increment(),
         )
     }
 
     #[must_use]
-    pub fn generate(&mut self) -> Snowflake<SnowflakeEpoch>
+    pub fn generate(&self) -> Snowflake<SnowflakeEpoch>
     where
         SnowflakeEpoch: Epoch,
     {
         self.generate_at(UtcDateTime::now())
+    }
+
+    #[must_use]
+    fn generate_increment(&self) -> SnowflakeIncrement {
+        // Intentionally wraps on overflow
+        let count = self.count.fetch_add(1, Ordering::AcqRel);
+        SnowflakeIncrement::new_unchecked(count % (1 << SnowflakeIncrement::BIT_COUNT))
     }
 }
 
@@ -319,6 +313,7 @@ mod tests {
         Epoch, ProcessId, Snowflake, SnowflakeGenerator, SnowflakeIncrement, SnowflakeTimestamp,
         SnowflakeTimestampFromDateTimeError, WorkerId,
     };
+    use std::sync::atomic::Ordering;
     use time::{Duration, UtcDateTime, macros::utc_datetime};
 
     struct MillennialEpoch;
@@ -393,31 +388,6 @@ mod tests {
     }
 
     #[test]
-    fn snowflake_increment() {
-        assert_eq!(
-            SnowflakeIncrement::new_unchecked(0).next(),
-            SnowflakeIncrement::new_unchecked(1)
-        );
-        assert_eq!(
-            SnowflakeIncrement::new_unchecked(100).next(),
-            SnowflakeIncrement::new_unchecked(101)
-        );
-        assert_eq!(
-            SnowflakeIncrement::new_unchecked(0xFFF).next(),
-            SnowflakeIncrement::new_unchecked(0)
-        );
-
-        let mut snowflake_increment = SnowflakeIncrement::new_unchecked(0xFFE);
-        snowflake_increment.increment();
-        assert_eq!(
-            snowflake_increment,
-            SnowflakeIncrement::new_unchecked(0xFFF)
-        );
-        snowflake_increment.increment();
-        assert_eq!(snowflake_increment, SnowflakeIncrement::new_unchecked(0));
-    }
-
-    #[test]
     fn snowflake_from_into_parts() {
         let timestamp = SnowflakeTimestamp::from_time_unchecked(utc_datetime!(2025-10-24 10:30));
         let worker_id = WorkerId::new_unchecked(0b10101);
@@ -441,7 +411,7 @@ mod tests {
         let process_id = ProcessId::new_unchecked(0);
         let time = utc_datetime!(2025-10-24 10:55);
 
-        let mut generator = SnowflakeGenerator::<MillennialEpoch>::new(worker_id, process_id);
+        let generator = SnowflakeGenerator::<MillennialEpoch>::new(worker_id, process_id);
 
         let first_snowflake = generator.generate_at(time);
         assert_eq!(
@@ -463,6 +433,34 @@ mod tests {
                 process_id,
                 SnowflakeIncrement::new_unchecked(1)
             )
+        );
+    }
+
+    #[test]
+    fn snowflake_generator_increment() {
+        let worker_id = WorkerId::new_unchecked(0);
+        let process_id = ProcessId::new_unchecked(0);
+
+        let generator = SnowflakeGenerator::<MillennialEpoch>::new(worker_id, process_id);
+        generator
+            .count
+            .store(SnowflakeIncrement::MAX_VALUE - 1, Ordering::Release);
+
+        assert_eq!(
+            generator.generate_increment(),
+            SnowflakeIncrement::new_unchecked(SnowflakeIncrement::MAX_VALUE - 1)
+        );
+        assert_eq!(
+            generator.generate_increment(),
+            SnowflakeIncrement::new_unchecked(SnowflakeIncrement::MAX_VALUE)
+        );
+        assert_eq!(
+            generator.generate_increment(),
+            SnowflakeIncrement::new_unchecked(0)
+        );
+        assert_eq!(
+            generator.generate_increment(),
+            SnowflakeIncrement::new_unchecked(1)
         );
     }
 }
