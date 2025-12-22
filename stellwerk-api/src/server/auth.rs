@@ -1,4 +1,5 @@
-use crate::server::ServerError;
+use crate::{open_api::BEARER_SECURITY_SCHEME, server::ServerError};
+use aide::{OperationInput, generate::GenContext, openapi::Operation};
 use axum::{
     extract::{FromRef, FromRequestParts},
     http::{StatusCode, request::Parts},
@@ -58,6 +59,14 @@ impl AuthenticationRejection {
             | AuthenticationRejection::InvalidToken => StatusCode::UNAUTHORIZED,
             AuthenticationRejection::AuthTokenHash(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
+    }
+}
+
+impl OperationInput for AuthenticatedUser {
+    fn operation_input(_ctx: &mut GenContext, operation: &mut Operation) {
+        operation
+            .security
+            .push([(BEARER_SECURITY_SCHEME.into(), Vec::new())].into());
     }
 }
 

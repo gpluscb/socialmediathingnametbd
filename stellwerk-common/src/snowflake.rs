@@ -3,11 +3,13 @@
 //! See <https://discord.com/developers/docs/reference#snowflakes>
 
 use derive_where::derive_where;
+use schemars::{JsonSchema, Schema, SchemaGenerator, schema_for};
 use serde::{
     Deserialize, Deserializer, Serialize,
     de::{Error, Unexpected},
 };
 use std::{
+    borrow::Cow,
     fmt::{Debug, Display, Formatter},
     marker::PhantomData,
     sync::atomic::{AtomicU16, Ordering},
@@ -121,6 +123,17 @@ snowflake_part!(SnowflakeTimestamp<SnowflakeEpoch>: u64 = snowflake & 0xFFFF_FFF
 )]
 #[serde(transparent)]
 pub struct Snowflake<SnowflakeEpoch>(u64, #[serde(skip)] PhantomData<SnowflakeEpoch>);
+
+// Cannot derive because it is incompatible with derive_where
+impl<SnowflakeEpoch> JsonSchema for Snowflake<SnowflakeEpoch> {
+    fn schema_name() -> Cow<'static, str> {
+        "Snowflake".into()
+    }
+
+    fn json_schema(_generator: &mut SchemaGenerator) -> Schema {
+        schema_for!(u64)
+    }
+}
 
 impl<SnowflakeEpoch> SnowflakeTimestamp<SnowflakeEpoch> {
     #[must_use]
@@ -350,11 +363,11 @@ mod tests {
 
         for legal_increment in legal_increments {
             assert!(SnowflakeIncrement::new(legal_increment).is_some());
-            assert!(SnowflakeIncrement::new(legal_increment).is_some());
+            assert!(SnowflakeIncrement::try_from(legal_increment).is_ok());
         }
         for illegal_increment in illegal_increments {
             assert!(SnowflakeIncrement::new(illegal_increment).is_none());
-            assert!(SnowflakeIncrement::new(illegal_increment).is_none());
+            assert!(SnowflakeIncrement::try_from(illegal_increment).is_err());
         }
     }
 

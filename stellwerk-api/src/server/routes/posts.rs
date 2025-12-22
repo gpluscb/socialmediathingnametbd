@@ -1,6 +1,9 @@
-use crate::server::{Result, ServerError, ServerRouter, auth::AuthenticatedUser, json::Json};
+use crate::server::{
+    Result, ServerError, ServerRouter, auth::AuthenticatedUser, json::Json, typed_path::PathWrapper,
+};
 use axum::extract::State;
-use axum_extra::routing::{RouterExt, TypedPath};
+use axum_extra::routing::TypedPath;
+use schemars::JsonSchema;
 use serde::Deserialize;
 use std::sync::Arc;
 use stellwerk_common::model::{
@@ -15,14 +18,14 @@ pub fn routes() -> ServerRouter {
         .typed_post(create_post)
 }
 
-#[derive(TypedPath, Deserialize)]
+#[derive(TypedPath, Deserialize, JsonSchema)]
 #[typed_path("/posts/{id}", rejection(ServerError))]
 struct GetPostPath {
     id: Id<PostMarker>,
 }
 
 async fn get_post(
-    GetPostPath { id }: GetPostPath,
+    PathWrapper(GetPostPath { id }): PathWrapper<GetPostPath>,
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<Post>> {
     let post = db
@@ -33,12 +36,12 @@ async fn get_post(
     Ok(Json(post))
 }
 
-#[derive(TypedPath, Deserialize)]
+#[derive(TypedPath, Deserialize, JsonSchema)]
 #[typed_path("/posts/create", rejection(ServerError))]
-struct CreatePostPath();
+struct CreatePostPath {}
 
 async fn create_post(
-    CreatePostPath(): CreatePostPath,
+    PathWrapper(CreatePostPath {}): PathWrapper<CreatePostPath>,
     State(db): State<Arc<DbClient>>,
     user: AuthenticatedUser,
     Json(post): Json<PostContent>,

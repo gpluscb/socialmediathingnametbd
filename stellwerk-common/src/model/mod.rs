@@ -7,8 +7,9 @@ use crate::{
     snowflake::{Epoch, Snowflake, SnowflakeGenerator},
     util::NonPositiveDurationError,
 };
-use serde::{Deserialize, Serialize};
-use std::{fmt::Display, marker::PhantomData};
+use derive_where::derive_where;
+use schemars::{JsonSchema, Schema, SchemaGenerator, schema_for};
+use std::{borrow::Cow, fmt::Display, marker::PhantomData};
 use thiserror::Error;
 use time::{UtcDateTime, macros::utc_datetime};
 
@@ -31,11 +32,31 @@ impl Epoch for StellwerkEpoch {
 pub type StellwerkSnowflake = Snowflake<StellwerkEpoch>;
 pub type StellwerkSnowflakeGenerator = SnowflakeGenerator<StellwerkEpoch>;
 
-#[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Hash, Serialize, Deserialize,
+#[derive_where(
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Debug,
+    Default,
+    Hash,
+    Serialize,
+    Deserialize
 )]
 #[serde(transparent)]
 pub struct Id<Marker>(StellwerkSnowflake, #[serde(skip)] PhantomData<Marker>);
+
+impl<Marker> JsonSchema for Id<Marker> {
+    fn schema_name() -> Cow<'static, str> {
+        "Id".into()
+    }
+
+    fn json_schema(_generator: &mut SchemaGenerator) -> Schema {
+        schema_for!(u64)
+    }
+}
 
 impl<Marker> Id<Marker> {
     #[must_use]

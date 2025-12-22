@@ -1,4 +1,5 @@
 use crate::model::Id;
+use schemars::JsonSchema;
 use serde::{
     Deserialize, Deserializer, Serialize,
     de::{Error, Unexpected},
@@ -10,18 +11,18 @@ pub const USER_HANDLE_MAX_LEN: usize = 50;
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Hash)]
 pub struct UserMarker;
 
-#[derive(Clone, Eq, PartialEq, Debug, Default, Hash, Deserialize, Serialize)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Hash, Deserialize, Serialize, JsonSchema)]
 pub struct User {
     pub id: Id<UserMarker>,
     pub handle: UserHandle,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Default, Hash, Deserialize, Serialize)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Hash, Deserialize, Serialize, JsonSchema)]
 pub struct CreateUser {
     pub handle: UserHandle,
 }
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Hash, Serialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Hash, Serialize, JsonSchema)]
 #[serde(transparent)]
 pub struct UserHandle(String);
 
