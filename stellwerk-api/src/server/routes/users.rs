@@ -1,5 +1,4 @@
-use crate::server::{Result, ServerError, ServerRouter, json::Json};
-use aide::OperationIo;
+use crate::server::{Result, ServerError, ServerRouter, json::Json, typed_path::PathWrapper};
 use axum::extract::State;
 use axum_extra::routing::TypedPath;
 use schemars::JsonSchema;
@@ -18,15 +17,14 @@ pub fn routes() -> ServerRouter {
         .typed_get(get_user_posts)
 }
 
-#[derive(TypedPath, Deserialize, JsonSchema, OperationIo)]
-#[aide(input)]
+#[derive(TypedPath, Deserialize, JsonSchema)]
 #[typed_path("/users/{id}", rejection(ServerError))]
 struct GetUserPath {
     id: Id<UserMarker>,
 }
 
 async fn get_user(
-    GetUserPath { id }: GetUserPath,
+    PathWrapper(GetUserPath { id }): PathWrapper<GetUserPath>,
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<User>> {
     let user = db
@@ -37,15 +35,14 @@ async fn get_user(
     Ok(Json(user))
 }
 
-#[derive(TypedPath, Deserialize, JsonSchema, OperationIo)]
-#[aide(input)]
+#[derive(TypedPath, Deserialize, JsonSchema)]
 #[typed_path("/users/{id}/posts", rejection(ServerError))]
 struct GetUserPostsPath {
     id: Id<UserMarker>,
 }
 
 async fn get_user_posts(
-    GetUserPostsPath { id }: GetUserPostsPath,
+    PathWrapper(GetUserPostsPath { id }): PathWrapper<GetUserPostsPath>,
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<Vec<PartialPost>>> {
     let posts = db

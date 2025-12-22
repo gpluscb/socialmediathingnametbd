@@ -19,6 +19,7 @@ use tracing::error;
 mod auth;
 mod json;
 mod routes;
+mod typed_path;
 
 pub type ServerRouter = ApiRouter<ServerState>;
 
