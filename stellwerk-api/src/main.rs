@@ -1,5 +1,6 @@
 #![feature(duration_constructors)]
 
+mod open_api;
 mod server;
 
 use crate::server::ServerState;
@@ -71,14 +72,10 @@ fn get_env() -> Result<Env, InitError> {
     envy::from_env().map_err(InitError::from)
 }
 
-async fn init_state(env: &Env) -> Result<ServerState, InitError> {
-    let db_client = DbClient::connect_and_migrate(&env.database_url, env.worker_id, env.process_id)
+async fn connect_database(env: &Env) -> Result<DbClient, InitError> {
+    DbClient::connect_and_migrate(&env.database_url, env.worker_id, env.process_id)
         .await
-        .map_err(InitError::DatabaseInitialization)?;
-
-    Ok(ServerState {
-        db_client: Arc::new(db_client),
-    })
+        .map_err(InitError::DatabaseInitialization)
 }
 
 async fn db_prune_loop(db: Arc<DbClient>, cancellation: CancellationToken) {
@@ -128,12 +125,20 @@ fn await_shutdown() -> Result<impl Future<Output = ()>, InitError> {
 #[tokio::main]
 async fn main() -> Result<(), InitError> {
     install_tracing();
+    // FIXME: Environment needs to be installed for install_tracing
     let env = get_env()?;
 
-    let state = init_state(&env).await?;
-    let db_client = state.db_client.clone();
+    let db_client = Arc::new(connect_database(&env).await?);
+    let mut open_api = open_api::install_open_api();
+
     let tracing_layer = TraceLayer::new_for_http();
-    let app = server::routes().layer(tracing_layer).with_state(state);
+    let app = server::routes()
+        .layer(tracing_layer)
+        .finish_api(&mut open_api)
+        .with_state(ServerState {
+            db_client: Arc::clone(&db_client),
+            open_api: Arc::new(open_api),
+        });
 
     let server_address = SocketAddr::new(env.server_address, env.server_port);
     let listener = tokio::net::TcpListener::bind(server_address)

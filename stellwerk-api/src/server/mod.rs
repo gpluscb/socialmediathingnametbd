@@ -1,6 +1,6 @@
 use crate::server::auth::AuthenticationRejection;
+use aide::{OperationOutput, axum::ApiRouter, openapi::OpenApi};
 use axum::{
-    Router,
     extract::{
         FromRef, Request,
         rejection::{JsonRejection, PathRejection},
@@ -20,11 +20,12 @@ mod auth;
 mod json;
 mod routes;
 
-pub type ServerRouter = Router<ServerState>;
+pub type ServerRouter = ApiRouter<ServerState>;
 
 #[derive(Clone, Debug, FromRef)]
 pub struct ServerState {
     pub db_client: Arc<DbClient>,
+    pub open_api: Arc<OpenApi>,
 }
 
 pub fn routes() -> ServerRouter {
@@ -55,6 +56,11 @@ pub enum ServerError {
     PostByIdNotFound(Id<PostMarker>),
     #[error("User with id {0} was not found.")]
     UserByIdNotFound(Id<UserMarker>),
+}
+
+// TODO: Add docs for errors (maybe once https://github.com/tamasfe/aide/pull/263 lands?)
+impl OperationOutput for ServerError {
+    type Inner = ServerError;
 }
 
 impl ServerError {
