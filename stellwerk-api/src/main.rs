@@ -60,15 +60,20 @@ fn install_tracing() {
         .init();
 }
 
-fn get_env() -> Result<Env, InitError> {
+/// Returns whether a dotenv file was found or not
+fn install_dotenv() -> Result<bool, InitError> {
     if let Err(e) = dotenvy::dotenv() {
         if e.not_found() {
-            debug!("No .env file found");
+            Ok(false)
         } else {
-            return Err(e.into());
+            Err(e.into())
         }
+    } else {
+        Ok(true)
     }
+}
 
+fn get_env() -> Result<Env, InitError> {
     envy::from_env().map_err(InitError::from)
 }
 
@@ -124,8 +129,11 @@ fn await_shutdown() -> Result<impl Future<Output = ()>, InitError> {
 
 #[tokio::main]
 async fn main() -> Result<(), InitError> {
+    let dotenv_found = install_dotenv()?;
     install_tracing();
-    // FIXME: Environment needs to be installed for install_tracing
+    if !dotenv_found {
+        debug!("No .env file found");
+    }
     let env = get_env()?;
 
     let db_client = Arc::new(connect_database(&env).await?);
