@@ -3,11 +3,12 @@
 //! See <https://discord.com/developers/docs/reference#snowflakes>
 
 use derive_where::derive_where;
-use schemars::{JsonSchema, Schema, SchemaGenerator, schema_for};
+use schemars::{JsonSchema, Schema, SchemaGenerator};
 use serde::{
     Deserialize, Deserializer, Serialize,
     de::{Error, Unexpected},
 };
+use serde_with::DisplayFromStr;
 use std::{
     borrow::Cow,
     fmt::{Debug, Display, Formatter},
@@ -108,6 +109,7 @@ snowflake_part!(ProcessId: u8 = snowflake & 0x0000_0000_0001_F000);
 snowflake_part!(SnowflakeIncrement: u16 = snowflake & 0x0000_0000_0000_0FFF);
 snowflake_part!(SnowflakeTimestamp<SnowflakeEpoch>: u64 = snowflake & 0xFFFF_FFFF_FFC0_0000);
 
+#[serde_with::serde_as]
 #[derive_where(
     Copy,
     Clone,
@@ -122,7 +124,10 @@ snowflake_part!(SnowflakeTimestamp<SnowflakeEpoch>: u64 = snowflake & 0xFFFF_FFF
     Deserialize
 )]
 #[serde(transparent)]
-pub struct Snowflake<SnowflakeEpoch>(u64, #[serde(skip)] PhantomData<SnowflakeEpoch>);
+pub struct Snowflake<SnowflakeEpoch>(
+    #[serde_as(as = "DisplayFromStr")] u64,
+    #[serde(skip)] PhantomData<SnowflakeEpoch>,
+);
 
 // Cannot derive because it is incompatible with derive_where
 impl<SnowflakeEpoch> JsonSchema for Snowflake<SnowflakeEpoch> {
@@ -130,8 +135,8 @@ impl<SnowflakeEpoch> JsonSchema for Snowflake<SnowflakeEpoch> {
         "Snowflake".into()
     }
 
-    fn json_schema(_generator: &mut SchemaGenerator) -> Schema {
-        schema_for!(u64)
+    fn json_schema(generator: &mut SchemaGenerator) -> Schema {
+        String::json_schema(generator)
     }
 }
 
