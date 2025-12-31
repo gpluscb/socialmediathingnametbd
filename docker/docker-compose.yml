@@ -1,6 +1,16 @@
 name: stellwerk
 
 services:
+  stellwerk-frontend:
+    build:
+      context: ../
+      dockerfile: docker/stellwerk-frontend/Dockerfile
+      target: final
+    network_mode: host
+    depends_on:
+      stellwerk-api:
+        condition: service_started
+
   stellwerk-api:
     build:
       context: ../
@@ -12,7 +22,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-  
+
   postgres:
     image: postgres:18
     restart: unless-stopped

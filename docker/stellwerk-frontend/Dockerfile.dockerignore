@@ -1,0 +1,13 @@
+*
+
+!stellwerk-frontend/package.json
+!stellwerk-frontend/package-lock.json
+
+!stellwerk-frontend/.npmrc
+!stellwerk-frontend/svelte.config.js
+!stellwerk-frontend/tsconfig.json
+!stellwerk-frontend/vite.config.ts
+
+!stellwerk-frontend/.svelte-kit
+!stellwerk-frontend/src
+!stellwerk-frontend/static
