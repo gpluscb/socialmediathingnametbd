@@ -1,10 +1,9 @@
 <script lang="ts">
+	import Post from '$lib/components/Post.svelte';
 	import type { PageProps } from './$types';
 
 	const { data }: PageProps = $props();
+	const { post } = data;
 </script>
 
-<div class="border-4 border-red-400">
-	<p>Post by {data.post.author.handle}</p>
-	<p>{data.post.content.content}</p>
-</div>
+<Post {post}/>
