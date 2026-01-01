@@ -3,7 +3,7 @@
 	import type { PageProps } from './$types';
 
 	const { data }: PageProps = $props();
-	const { post } = data;
+	const { post } = $derived(data);
 </script>
 
 <Post {post}/>
