@@ -6,4 +6,4 @@
 	const { post } = $derived(data);
 </script>
 
-<Post {post}/>
+<Post {post} />
