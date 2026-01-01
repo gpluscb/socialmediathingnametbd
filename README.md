@@ -36,7 +36,7 @@ architecture-beta
 
     service db(database)[Database] in backend
     service api(server)[REST API] in backend
-    
+
     service web(server)[Web server] in frontend
 
     db:L -- R:api
@@ -59,22 +59,27 @@ Its only purpose is to ensure that, for example, a user id is not accidentally u
 
 ## Setup and Building
 
-### Running in Docker
+### Running with Docker (recommended)
 
 1. Install Docker.
 2. Create a directory `docker/Secrets` with files `POSTGRES_USER.txt`, `POSTGRES_PASSWORD.txt`, `POSTGRES_DB.txt`.
    The user and password files should contain the name and password your postgres user should have.
    The contents of the db file will be the name of the database, for example `stellwerk`.
 3. Create the env file `docker/stellwerk-api/.env`.
-4. Run `docker compose --file docker/docker-compose.yml up --build`.
-   You can re-run this command whenever you make new changes.
+4. Run `docker compose --file docker/docker-compose.dev.yml up --build`.
+   Changes to the `stellwerk-frontend` are applied automatically.
+   To apply changes to `stellwerk-api`, you can run
+   `docker compose --file docker/docker-compose.dev.yml up --build stellwerk-api`.
 
-### Running with Cargo
+### Running with not Docker (not recommended)
 
-1. Install rust (nightly).
-2. Create the env file `stellwerk-api/.env`
-3. cd into `stellwerk-api`
-4. Run `cargo run`
+1. Install PostgreSQL and create a PostgreSQL database
+2. Install rust (nightly).
+3. Create the env file `stellwerk-api/.env`
+4. cd into `stellwerk-api`
+5. Run `cargo run`
+6. cd into `stellwerk-frontend`
+7. Run `npm run dev`
 
 ### Example `.env`:
 
