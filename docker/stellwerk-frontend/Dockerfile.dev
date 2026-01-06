@@ -1,0 +1,13 @@
+# syntax=docker/dockerfile:1
+
+FROM node:25 as final
+WORKDIR /app
+
+RUN --mount=type=bind,source=stellwerk-frontend/package.json,target=package.json,readonly \
+    --mount=type=bind,source=stellwerk-frontend/package-lock.json,target=package-lock.json,readwrite \
+    npm install
+
+ENV NODE_ENV=development
+
+# This command requires a bind mount of the stellwerk-frontend directory to /app
+CMD ["npm", "run", "dev"]

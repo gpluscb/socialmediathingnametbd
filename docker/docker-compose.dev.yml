@@ -1,10 +1,25 @@
-name: stellwerk
+name: stellwerk-dev
 
 services:
+  stellwerk-frontend:
+    build:
+      context: ../
+      dockerfile: docker/stellwerk-frontend/Dockerfile.dev
+      target: final
+    volumes:
+      - type: bind
+        source: ../stellwerk-frontend/
+        target: /app/
+        read_only: false
+    network_mode: host
+    depends_on:
+      stellwerk-api:
+        condition: service_started
+
   stellwerk-api:
     build:
       context: ../
-      dockerfile: docker/stellwerk-api/Dockerfile
+      dockerfile: docker/stellwerk-api/Dockerfile.dev
       target: final
     network_mode: host
     env_file:
@@ -12,7 +27,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-  
+
   postgres:
     image: postgres:18
     restart: unless-stopped
@@ -23,7 +38,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./data:/var/lib/postgresql/18/data
+      - ./data-dev:/var/lib/postgresql/18/data
     secrets:
       - postgres_db
       - postgres_user

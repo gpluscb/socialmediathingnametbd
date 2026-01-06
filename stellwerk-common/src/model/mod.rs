@@ -8,7 +8,7 @@ use crate::{
     util::NonPositiveDurationError,
 };
 use derive_where::derive_where;
-use schemars::{JsonSchema, Schema, SchemaGenerator, schema_for};
+use schemars::{JsonSchema, Schema, SchemaGenerator};
 use std::{borrow::Cow, fmt::Display, marker::PhantomData};
 use thiserror::Error;
 use time::{UtcDateTime, macros::utc_datetime};
@@ -53,8 +53,8 @@ impl<Marker> JsonSchema for Id<Marker> {
         "Id".into()
     }
 
-    fn json_schema(_generator: &mut SchemaGenerator) -> Schema {
-        schema_for!(u64)
+    fn json_schema(generator: &mut SchemaGenerator) -> Schema {
+        StellwerkSnowflake::json_schema(generator)
     }
 }
 
