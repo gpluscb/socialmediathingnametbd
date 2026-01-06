@@ -1,9 +1,9 @@
 <script lang="ts">
-	import Post from '$lib/components/Post.svelte';
+	import PostById from '$lib/components/post/PostById.svelte';
 	import type { PageProps } from './$types';
 
-	const { data }: PageProps = $props();
-	const { post } = $derived(data);
+	const { params }: PageProps = $props();
+	const { id: postId } = $derived(params);
 </script>
 
-<Post {post} />
+<PostById id={postId} />
