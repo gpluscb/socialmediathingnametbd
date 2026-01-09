@@ -40,6 +40,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/posts/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    pagination_reference: components["schemas"]["PaginationReference"];
+                    per_page: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Post"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts/create": {
         parameters: {
             query?: never;
@@ -771,6 +808,18 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        PaginationReference: {
+            before: components["schemas"]["Id"];
+            /** @constant */
+            pagination_reference: "before";
+        } | {
+            after: components["schemas"]["Id"];
+            /** @constant */
+            pagination_reference: "after";
+        } | {
+            /** @constant */
+            pagination_reference: "latest";
+        };
         Parameter: (({
             /**
              * @description Sets the ability to pass empty-valued parameters. This is
@@ -1094,6 +1143,11 @@ export interface components {
         };
         /** @enum {string} */
         QueryStyle: "form" | "spaceDelimited" | "pipeDelimited" | "deepObject";
+        RecentPostsParams: {
+            pagination_reference: components["schemas"]["PaginationReference"];
+            /** Format: uint32 */
+            per_page: number;
+        };
         ReferenceOr: {
             /**
              * @description REQUIRED. The reference identifier. This MUST be in the form of a

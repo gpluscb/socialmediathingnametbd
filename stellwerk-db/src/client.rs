@@ -4,6 +4,7 @@ use stellwerk_common::{
     model::{
         Id, ModelValidationError, StellwerkSnowflakeGenerator,
         auth::{AuthTokenHash, Authentication},
+        pagination::PaginationReference,
         post::{PartialPost, Post, PostContent, PostMarker},
         user::{CreateUser, User, UserHandle, UserMarker},
     },
@@ -183,6 +184,95 @@ impl DbClient {
 
         let post = record.map(Post::try_from).transpose()?;
         Ok(post)
+    }
+
+    pub async fn fetch_recent_posts(
+        &self,
+        reference_post: PaginationReference,
+        limit: u32,
+    ) -> Result<Vec<Post>> {
+        // TODO: Because we store the snowflake as an i64 in postgres, the comparisons will break in like uhhh twenty-ninety-something. Should fix before then.
+        let records = match reference_post {
+            PaginationReference::Before { before } => {
+                let mut rows = query_as!(
+                    PostRecord,
+                    "
+                    SELECT
+                        posts.post_snowflake,
+                        posts.content,
+                        users.user_snowflake,
+                        users.handle
+                    FROM
+                        posts.posts NATURAL JOIN users.users
+                    WHERE
+                        posts.post_snowflake < $1
+                    ORDER BY
+                        posts.post_snowflake
+                    ASC
+                    LIMIT $2
+                    ",
+                    before.snowflake().get().cast_signed(),
+                    i64::from(limit),
+                )
+                .fetch_all(&self.pool)
+                .await?;
+                // In the query we order by post snowflake ASC (oldest posts first),
+                // so we need to reverse the ordering here
+                rows.reverse();
+                rows
+            }
+            PaginationReference::After { after } => {
+                query_as!(
+                    PostRecord,
+                    "
+                    SELECT
+                        posts.post_snowflake,
+                        posts.content,
+                        users.user_snowflake,
+                        users.handle
+                    FROM
+                        posts.posts NATURAL JOIN users.users
+                    WHERE
+                        posts.post_snowflake > $1
+                    ORDER BY
+                        posts.post_snowflake
+                    DESC
+                    LIMIT $2
+                    ",
+                    after.snowflake().get().cast_signed(),
+                    i64::from(limit),
+                )
+                .fetch_all(&self.pool)
+                .await?
+            }
+            PaginationReference::Latest => {
+                query_as!(
+                    PostRecord,
+                    "
+                    SELECT
+                        posts.post_snowflake,
+                        posts.content,
+                        users.user_snowflake,
+                        users.handle
+                    FROM
+                        posts.posts NATURAL JOIN users.users
+                    ORDER BY
+                        posts.post_snowflake
+                    DESC
+                    LIMIT $1
+                    ",
+                    i64::from(limit),
+                )
+                .fetch_all(&self.pool)
+                .await?
+            }
+        };
+
+        let posts = records
+            .into_iter()
+            .map(Post::try_from)
+            .collect::<Result<_, _>>()?;
+        Ok(posts)
     }
 
     pub async fn create_post(

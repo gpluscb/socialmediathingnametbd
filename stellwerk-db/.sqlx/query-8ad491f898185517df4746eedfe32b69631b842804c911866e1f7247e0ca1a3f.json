@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    SELECT\n                        posts.post_snowflake,\n                        posts.content,\n                        users.user_snowflake,\n                        users.handle\n                    FROM\n                        posts.posts NATURAL JOIN users.users\n                    WHERE\n                        posts.post_snowflake < $1\n                    ORDER BY\n                        posts.post_snowflake\n                    ASC\n                    LIMIT $2\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "post_snowflake",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_snowflake",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "handle",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8ad491f898185517df4746eedfe32b69631b842804c911866e1f7247e0ca1a3f"
+}

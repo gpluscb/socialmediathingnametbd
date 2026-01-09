@@ -3,7 +3,7 @@ use aide::{OperationOutput, axum::ApiRouter, openapi::OpenApi};
 use axum::{
     extract::{
         FromRef, Request,
-        rejection::{JsonRejection, PathRejection},
+        rejection::{JsonRejection, PathRejection, QueryRejection},
     },
     http::{StatusCode, Uri},
     response::{IntoResponse, Response},
@@ -18,6 +18,7 @@ use tracing::error;
 
 mod auth;
 mod json;
+mod query;
 mod routes;
 mod typed_path;
 
@@ -49,6 +50,8 @@ pub enum ServerError {
     JsonRejection(#[from] JsonRejection),
     #[error("JSON response could not be serialized: {0}")]
     JsonResponse(#[from] serde_json::Error),
+    #[error("Query parameters rejected: {0}")]
+    QueryRejection(#[from] QueryRejection),
     #[error(transparent)]
     AuthenticationRejection(#[from] AuthenticationRejection),
     #[error(transparent)]
@@ -72,7 +75,9 @@ impl ServerError {
             | ServerError::PathRejection(_)
             | ServerError::PostByIdNotFound(_)
             | ServerError::UserByIdNotFound(_) => StatusCode::NOT_FOUND,
-            ServerError::JsonRejection(_) => StatusCode::BAD_REQUEST,
+            ServerError::JsonRejection(_) | ServerError::QueryRejection(_) => {
+                StatusCode::BAD_REQUEST
+            }
             ServerError::JsonResponse(_) | ServerError::Database(_) => {
                 StatusCode::INTERNAL_SERVER_ERROR
             }
