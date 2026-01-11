@@ -10,16 +10,18 @@
 	const { id }: Props = $props();
 </script>
 
-{#snippet pending()}
-	<PostContainer>Loading...</PostContainer>
-{/snippet}
+<svelte:boundary>
+	<Post post={await getPost(id)} />
 
-<!--TODO: I guess log this error somewhere somehow-->
-{#snippet failed(_error: unknown, reset: () => void)}
-	<PostContainer>
-		<p>Failed to load.</p>
-		<button onclick={reset}>Retry?</button>
-	</PostContainer>
-{/snippet}
+	{#snippet pending()}
+		<PostContainer>Loading...</PostContainer>
+	{/snippet}
 
-<svelte:boundary {pending} {failed}><Post post={await getPost(id)} /></svelte:boundary>
+	<!--TODO: I guess log this error somewhere somehow-->
+	{#snippet failed(_error, reset)}
+		<PostContainer>
+			<p>Failed to load.</p>
+			<button onclick={reset}>Retry?</button>
+		</PostContainer>
+	{/snippet}
+</svelte:boundary>

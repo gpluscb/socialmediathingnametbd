@@ -27,18 +27,8 @@
 	const paginationReference = $derived(paramsToPaginationReference(params));
 </script>
 
-{#snippet pending()}
-	Loading...
-{/snippet}
-
-<!--TODO: I guess log this error somewhere somehow-->
-{#snippet failed(_error: unknown, reset: () => void)}
-	<p>Failed to load.</p>
-	<button onclick={reset}>Retry?</button>
-{/snippet}
-
 <div>
-	<svelte:boundary {pending} {failed}>
+	<svelte:boundary>
 		{@const posts = await getRecentPosts(10, paginationReference)}
 
 		{#each posts as post}
@@ -79,5 +69,15 @@
 		>
 			Older
 		</button>
+
+		{#snippet pending()}
+			Loading...
+		{/snippet}
+
+		<!--TODO: I guess log this error somewhere somehow-->
+		{#snippet failed(_error, reset)}
+			<p>Failed to load.</p>
+			<button onclick={reset}>Retry?</button>
+		{/snippet}
 	</svelte:boundary>
 </div>
