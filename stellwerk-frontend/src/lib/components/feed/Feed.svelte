@@ -5,7 +5,7 @@
 	interface Props {
 		pagination: PaginationReference;
 	}
-
+	
 	let { pagination }: Props = $props();
 </script>
 
@@ -22,7 +22,7 @@
 			onclick={() => {
 				const first = posts.at(0)?.id;
 				pagination = first
-					? { pagination_reference: 'after', after: first }
+					? { after: first }
 					: { pagination_reference: 'latest' };
 			}}
 		>
@@ -32,7 +32,7 @@
 			onclick={() => {
 				const last = posts.at(-1)?.id;
 				pagination = last
-					? { pagination_reference: 'before', before: last }
+					? { before: last }
 					: { pagination_reference: 'latest' };
 			}}
 		>

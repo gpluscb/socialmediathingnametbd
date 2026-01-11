@@ -8,7 +8,13 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "pagination_reference")]
 #[serde(rename_all = "snake_case")]
 pub enum PaginationReference {
-    Before { before: Id<PostMarker> },
-    After { after: Id<PostMarker> },
     Latest,
+    #[serde(untagged)]
+    Before {
+        before: Id<PostMarker>,
+    },
+    #[serde(untagged)]
+    After {
+        after: Id<PostMarker>,
+    },
 }

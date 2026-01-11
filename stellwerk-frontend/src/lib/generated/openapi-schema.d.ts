@@ -809,16 +809,12 @@ export interface components {
             [key: string]: unknown;
         };
         PaginationReference: {
-            before: components["schemas"]["Id"];
-            /** @constant */
-            pagination_reference: "before";
-        } | {
-            after: components["schemas"]["Id"];
-            /** @constant */
-            pagination_reference: "after";
-        } | {
             /** @constant */
             pagination_reference: "latest";
+        } | {
+            before: components["schemas"]["Id"];
+        } | {
+            after: components["schemas"]["Id"];
         };
         Parameter: (({
             /**
