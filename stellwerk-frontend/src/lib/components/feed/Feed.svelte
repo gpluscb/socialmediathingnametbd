@@ -23,10 +23,12 @@
 		}
 		return { pagination_reference: 'newest' };
 	}
+
+	const paginationReference = $derived(paramsToPaginationReference(params));
 </script>
 
 <svelte:boundary>
-	{@const posts = await getRecentPosts(10, paramsToPaginationReference(params))}
+	{@const posts = await getRecentPosts(10, paginationReference)}
 
 	<div>
 		{#each posts as post}
