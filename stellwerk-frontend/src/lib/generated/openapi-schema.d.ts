@@ -810,11 +810,11 @@ export interface components {
         };
         PaginationReference: {
             /** @constant */
-            pagination_reference: "latest";
+            pagination_reference: "newest";
         } | {
-            before: components["schemas"]["Id"];
+            newer_than: components["schemas"]["Id"];
         } | {
-            after: components["schemas"]["Id"];
+            older_than: components["schemas"]["Id"];
         };
         Parameter: (({
             /**

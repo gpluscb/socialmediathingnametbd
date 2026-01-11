@@ -1,42 +1,71 @@
 <script lang="ts">
 	import { getRecentPosts, type PaginationReference } from '$lib/api/client';
 	import Post from '../post/Post.svelte';
+	import { useSearchParams } from 'runed/kit';
+	import z from 'zod';
 
-	interface Props {
-		pagination: PaginationReference;
+	const schema = z.object({
+		pagination_reference: z.literal('newest').nullable().default(null),
+		newer_than: z.string().nullable().default(null),
+		older_than: z.string().nullable().default(null),
+	});
+	const params = useSearchParams(schema);
+
+	function paramsToPaginationReference({
+		newer_than,
+		older_than,
+	}: z.output<typeof schema>): PaginationReference {
+		if (newer_than) {
+			return { newer_than };
+		}
+		if (older_than) {
+			return { older_than };
+		}
+		return { pagination_reference: 'newest' };
 	}
-	
-	let { pagination }: Props = $props();
 </script>
 
 <svelte:boundary>
-	{@const posts = await getRecentPosts(10, pagination)}
-	
+	{@const posts = await getRecentPosts(10, paramsToPaginationReference(params))}
+
 	<div>
 		{#each posts as post}
 			<Post {post} />
 		{/each}
 
-		<button onclick={() => (pagination = { pagination_reference: 'latest' })}>Newest</button>
+		<button
+			onclick={() =>
+				params.update({
+					older_than: null,
+					newer_than: null,
+					pagination_reference: 'newest',
+				})}
+		>
+			Newest
+		</button>
 		<button
 			onclick={() => {
 				const first = posts.at(0)?.id;
-				pagination = first
-					? { after: first }
-					: { pagination_reference: 'latest' };
+				params.update({
+					older_than: null,
+					newer_than: first ?? null,
+					pagination_reference: first ? null : 'newest',
+				});
 			}}
 		>
-			Previous
+			Newer
 		</button>
 		<button
 			onclick={() => {
 				const last = posts.at(-1)?.id;
-				pagination = last
-					? { before: last }
-					: { pagination_reference: 'latest' };
+				params.update({
+					older_than: last ?? null,
+					newer_than: null,
+					pagination_reference: last ? null : 'newest',
+				});
 			}}
 		>
-			Next
+			Older
 		</button>
 	</div>
 </svelte:boundary>

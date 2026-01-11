@@ -193,7 +193,7 @@ impl DbClient {
     ) -> Result<Vec<Post>> {
         // TODO: Because we store the snowflake as an i64 in postgres, the comparisons will break in like uhhh twenty-ninety-something. Should fix before then.
         let records = match reference_post {
-            PaginationReference::Before { before } => {
+            PaginationReference::Newest => {
                 query_as!(
                     PostRecord,
                     "
@@ -204,20 +204,17 @@ impl DbClient {
                         users.handle
                     FROM
                         posts.posts NATURAL JOIN users.users
-                    WHERE
-                        posts.post_snowflake < $1
                     ORDER BY
                         posts.post_snowflake
                     DESC
-                    LIMIT $2
+                    LIMIT $1
                     ",
-                    before.snowflake().get().cast_signed(),
                     i64::from(limit),
                 )
                 .fetch_all(&self.pool)
                 .await?
             }
-            PaginationReference::After { after } => {
+            PaginationReference::NewerThan { newer_than } => {
                 let mut rows = query_as!(
                     PostRecord,
                     "
@@ -235,7 +232,7 @@ impl DbClient {
                     ASC
                     LIMIT $2
                     ",
-                    after.snowflake().get().cast_signed(),
+                    newer_than.snowflake().get().cast_signed(),
                     i64::from(limit),
                 )
                 .fetch_all(&self.pool)
@@ -245,7 +242,7 @@ impl DbClient {
                 rows.reverse();
                 rows
             }
-            PaginationReference::Latest => {
+            PaginationReference::OlderThan { older_than } => {
                 query_as!(
                     PostRecord,
                     "
@@ -256,11 +253,14 @@ impl DbClient {
                         users.handle
                     FROM
                         posts.posts NATURAL JOIN users.users
+                    WHERE
+                        posts.post_snowflake < $1
                     ORDER BY
                         posts.post_snowflake
                     DESC
-                    LIMIT $1
+                    LIMIT $2
                     ",
+                    older_than.snowflake().get().cast_signed(),
                     i64::from(limit),
                 )
                 .fetch_all(&self.pool)
