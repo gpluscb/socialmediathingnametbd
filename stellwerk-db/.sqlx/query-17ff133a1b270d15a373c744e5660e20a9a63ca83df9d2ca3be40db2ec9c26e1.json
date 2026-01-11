@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                    SELECT\n                        posts.post_snowflake,\n                        posts.content,\n                        users.user_snowflake,\n                        users.handle\n                    FROM\n                        posts.posts NATURAL JOIN users.users\n                    WHERE\n                        posts.post_snowflake < $1\n                    ORDER BY\n                        posts.post_snowflake\n                    ASC\n                    LIMIT $2\n                    ",
+  "query": "\n                    SELECT\n                        posts.post_snowflake,\n                        posts.content,\n                        users.user_snowflake,\n                        users.handle\n                    FROM\n                        posts.posts NATURAL JOIN users.users\n                    WHERE\n                        posts.post_snowflake > $1\n                    ORDER BY\n                        posts.post_snowflake\n                    ASC\n                    LIMIT $2\n                    ",
   "describe": {
     "columns": [
       {
@@ -37,5 +37,5 @@
       false
     ]
   },
-  "hash": "8ad491f898185517df4746eedfe32b69631b842804c911866e1f7247e0ca1a3f"
+  "hash": "17ff133a1b270d15a373c744e5660e20a9a63ca83df9d2ca3be40db2ec9c26e1"
 }

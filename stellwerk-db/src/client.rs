@@ -194,7 +194,7 @@ impl DbClient {
         // TODO: Because we store the snowflake as an i64 in postgres, the comparisons will break in like uhhh twenty-ninety-something. Should fix before then.
         let records = match reference_post {
             PaginationReference::Before { before } => {
-                let mut rows = query_as!(
+                query_as!(
                     PostRecord,
                     "
                     SELECT
@@ -208,21 +208,17 @@ impl DbClient {
                         posts.post_snowflake < $1
                     ORDER BY
                         posts.post_snowflake
-                    ASC
+                    DESC
                     LIMIT $2
                     ",
                     before.snowflake().get().cast_signed(),
                     i64::from(limit),
                 )
                 .fetch_all(&self.pool)
-                .await?;
-                // In the query we order by post snowflake ASC (oldest posts first),
-                // so we need to reverse the ordering here
-                rows.reverse();
-                rows
+                .await?
             }
             PaginationReference::After { after } => {
-                query_as!(
+                let mut rows = query_as!(
                     PostRecord,
                     "
                     SELECT
@@ -236,14 +232,18 @@ impl DbClient {
                         posts.post_snowflake > $1
                     ORDER BY
                         posts.post_snowflake
-                    DESC
+                    ASC
                     LIMIT $2
                     ",
                     after.snowflake().get().cast_signed(),
                     i64::from(limit),
                 )
                 .fetch_all(&self.pool)
-                .await?
+                .await?;
+                // In the query we order by post snowflake ASC (oldest posts first),
+                // so we need to reverse the ordering here
+                rows.reverse();
+                rows
             }
             PaginationReference::Latest => {
                 query_as!(
