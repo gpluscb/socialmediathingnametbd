@@ -32,7 +32,9 @@
 		{@const posts = await getRecentPosts(10, paginationReference)}
 
 		{#each posts as post}
-			<Post {post} />
+			<a href="/posts/{post.id}">
+				<Post {post} />
+			</a>
 		{/each}
 
 		<button
