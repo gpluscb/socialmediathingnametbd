@@ -19,7 +19,7 @@ tokio = { version = "1.47.1", features = ["rt-multi-thread", "macros", "signal"]
 tokio-util = "0.7.16"
 axum = { version = "0.8.6", features = ["macros"] }
 axum-extra = { version = "0.12.2", features = ["typed-header", "typed-routing"] }
-aide = { version = "0.16.0-alpha.1", features = ["macros", "swagger", "axum", "axum-json", "axum-query", "axum-extra", "axum-extra-headers", "axum-extra-typed-routing"] }
+aide = { version = "0.16.0-alpha.2", features = ["macros", "swagger", "axum", "axum-json", "axum-query", "axum-extra", "axum-extra-headers", "axum-extra-typed-routing"] }
 schemars = "1.2.0"
 headers = "0.4.1"
 time = "0.3.44"
