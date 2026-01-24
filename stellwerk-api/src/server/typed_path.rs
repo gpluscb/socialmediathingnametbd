@@ -10,7 +10,7 @@ use std::fmt::{Display, Formatter};
 
 /// Like [`aide::axum::routing::typed::TypedPath`], but implementing required traits.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Hash, JsonSchema)]
-#[serde(transparent)]
+#[schemars(transparent)]
 pub struct PathWrapper<T>(pub T);
 
 impl<T> OperationInput for PathWrapper<T>
