@@ -1,6 +1,6 @@
 use crate::server::{
     Result, ServerError, ServerRouter, auth::AuthenticatedUser, json::Json, query::Query,
-    typed_path::PathWrapper,
+    typed_path::PathWrapper, validated::Validated,
 };
 use axum::extract::State;
 use axum_extra::routing::TypedPath;
@@ -13,6 +13,7 @@ use stellwerk_common::model::{
     post::{PartialPost, Post, PostContent, PostMarker},
 };
 use stellwerk_db::client::DbClient;
+use validator::Validate;
 
 pub fn routes() -> ServerRouter {
     ServerRouter::new()
@@ -42,8 +43,9 @@ async fn get_post(
 #[derive(TypedPath, Deserialize, JsonSchema)]
 #[typed_path("/posts/recent", rejection(ServerError))]
 struct RecentPostsPath {}
-#[derive(Deserialize, JsonSchema)]
+#[derive(Deserialize, JsonSchema, Validate)]
 struct RecentPostsParams {
+    #[validate(range(max = 50))]
     per_page: u32,
     #[serde(flatten)]
     // TODO: This is a hack. Without this, openapi-typescript generates wrong types.
@@ -57,10 +59,10 @@ struct RecentPostsParams {
 
 async fn get_recent_posts(
     PathWrapper(RecentPostsPath {}): PathWrapper<RecentPostsPath>,
-    Query(params): Query<RecentPostsParams>,
+    Query(params): Query<Validated<RecentPostsParams>>,
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<Vec<Post>>> {
-    // TODO: Validate max per_page
+    let params = params.get();
     let posts = db
         .fetch_recent_posts(params.pagination_reference, params.per_page)
         .await?;

@@ -21,6 +21,7 @@ axum = { version = "0.8.6", features = ["macros"] }
 axum-extra = { version = "0.12.2", features = ["typed-header", "typed-routing"] }
 aide = { version = "0.16.0-alpha.2", features = ["macros", "swagger", "axum", "axum-json", "axum-query", "axum-extra", "axum-extra-headers", "axum-extra-typed-routing"] }
 schemars = "1.2.0"
+validator = { version = "0.20.0", features = ["derive"] }
 headers = "0.4.1"
 time = "0.3.44"
 

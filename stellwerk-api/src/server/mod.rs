@@ -21,6 +21,7 @@ mod json;
 mod query;
 mod routes;
 mod typed_path;
+mod validated;
 
 pub type ServerRouter = ApiRouter<ServerState>;
 
