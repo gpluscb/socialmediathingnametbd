@@ -5,14 +5,12 @@ use axum::{
     http::{Uri, request::Parts},
 };
 use axum_extra::routing::TypedPath;
-use schemars::{JsonSchema, Schema, SchemaGenerator};
-use std::{
-    borrow::Cow,
-    fmt::{Display, Formatter},
-};
+use schemars::JsonSchema;
+use std::fmt::{Display, Formatter};
 
 /// Like [`aide::axum::routing::typed::TypedPath`], but implementing required traits.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Hash, JsonSchema)]
+#[serde(transparent)]
 pub struct PathWrapper<T>(pub T);
 
 impl<T> OperationInput for PathWrapper<T>
@@ -21,27 +19,6 @@ where
 {
     fn operation_input(ctx: &mut GenContext, operation: &mut Operation) {
         aide::axum::routing::typed::TypedPath::<T>::operation_input(ctx, operation);
-    }
-}
-
-impl<T> JsonSchema for PathWrapper<T>
-where
-    T: JsonSchema,
-{
-    fn inline_schema() -> bool {
-        T::inline_schema()
-    }
-
-    fn schema_name() -> Cow<'static, str> {
-        format!("PathWrapper_{}", T::schema_name()).into()
-    }
-
-    fn schema_id() -> Cow<'static, str> {
-        format!("{}::PathWrapper<{}>", module_path!(), T::schema_id()).into()
-    }
-
-    fn json_schema(generator: &mut SchemaGenerator) -> Schema {
-        T::json_schema(generator)
     }
 }
 
