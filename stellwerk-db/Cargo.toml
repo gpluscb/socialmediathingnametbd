@@ -6,9 +6,9 @@ edition.workspace = true
 [dependencies]
 stellwerk-common = { path = "../stellwerk-common" }
 
-sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "time"] }
-thiserror = "2.0.17"
-time = "0.3.44"
+sqlx.workspace = true
+thiserror.workspace = true
+time.workspace = true
 
 [lints]
 workspace = true
