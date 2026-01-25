@@ -1,5 +1,5 @@
-**/target/
-.idea/
+**/.idea/
+**/.vscode/
 docker/data/
 docker/secrets/
 **/.env

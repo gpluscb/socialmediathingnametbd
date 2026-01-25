@@ -3,8 +3,8 @@ name: stellwerk-dev
 services:
   stellwerk-frontend:
     build:
-      context: ../
-      dockerfile: docker/stellwerk-frontend/Dockerfile.dev
+      context: ../stellwerk-frontend/
+      dockerfile: ../docker/stellwerk-frontend/Dockerfile.dev
       target: final
     volumes:
       - type: bind
@@ -18,8 +18,8 @@ services:
 
   stellwerk-api:
     build:
-      context: ../
-      dockerfile: docker/stellwerk-api/Dockerfile.dev
+      context: ../crates/
+      dockerfile: ../docker/stellwerk-api/Dockerfile.dev
       target: final
     network_mode: host
     env_file:
