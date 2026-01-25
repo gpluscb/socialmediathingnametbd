@@ -4,7 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-stellwerk-common = { path = "../stellwerk-common" }
+stellwerk-common.workspace = true
 
 sqlx.workspace = true
 thiserror.workspace = true

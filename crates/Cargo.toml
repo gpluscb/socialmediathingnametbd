@@ -14,6 +14,9 @@ missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 
 [workspace.dependencies]
+stellwerk-common = { path = "stellwerk-common" }
+stellwerk-db = { path = "stellwerk-db" }
+
 aide = { version = "0.16.0-alpha.2", features = ["macros", "swagger", "axum", "axum-json", "axum-query", "axum-extra", "axum-extra-headers", "axum-extra-typed-routing"] }
 argon2 = { version = "0.5.3", features = ["std"] }
 axum = { version = "0.8.6", features = ["macros"] }
