@@ -2,8 +2,9 @@ use crate::record::{AuthenticationRecord, PartialPostRecord, PostRecord, UserRec
 use sqlx::{PgPool, migrate, migrate::MigrateError, query, query_as, query_scalar};
 use stellwerk_common::{
     model::{
-        Id, ModelValidationError, StellwerkSnowflakeGenerator,
+        ModelValidationError,
         auth::{AuthTokenHash, Authentication},
+        id::{Id, StellwerkSnowflakeGenerator},
         pagination::PaginationReference,
         post::{PartialPost, Post, PostContent, PostMarker},
         user::{CreateUser, User, UserHandle, UserMarker},

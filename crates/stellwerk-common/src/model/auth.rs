@@ -1,5 +1,5 @@
 use crate::{
-    model::{Id, user::UserMarker},
+    model::{id::Id, user::UserMarker},
     util::PositiveDuration,
 };
 use argon2::{Algorithm, Argon2, Params, Version};
@@ -167,8 +167,8 @@ impl TryFrom<Box<[u8]>> for AuthTokenHash {
 #[cfg(test)]
 mod tests {
     use crate::model::{
-        Id,
         auth::{AuthToken, AuthTokenHash},
+        id::Id,
     };
 
     #[test]

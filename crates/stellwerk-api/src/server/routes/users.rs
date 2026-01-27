@@ -5,7 +5,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use std::sync::Arc;
 use stellwerk_common::model::{
-    Id,
+    id::Id,
     post::PartialPost,
     user::{User, UserMarker},
 };

@@ -11,7 +11,7 @@ use axum::{
 use json::Json;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use stellwerk_common::model::{Id, post::PostMarker, user::UserMarker};
+use stellwerk_common::model::{id::Id, post::PostMarker, user::UserMarker};
 use stellwerk_db::client::{DbClient, DbError};
 use thiserror::Error;
 use tracing::error;

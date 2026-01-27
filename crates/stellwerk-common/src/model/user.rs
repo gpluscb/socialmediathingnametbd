@@ -1,4 +1,4 @@
-use crate::model::Id;
+use crate::model::id::Id;
 use schemars::JsonSchema;
 use serde::{
     Deserialize, Deserializer, Serialize,

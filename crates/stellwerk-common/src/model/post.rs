@@ -1,5 +1,5 @@
 use crate::model::{
-    Id,
+    id::Id,
     user::{User, UserMarker},
 };
 use schemars::JsonSchema;

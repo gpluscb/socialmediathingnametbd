@@ -1,4 +1,4 @@
-use crate::model::{Id, post::PostMarker};
+use crate::model::{id::Id, post::PostMarker};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

@@ -8,8 +8,8 @@ use axum_extra::{TypedHeader, typed_header::TypedHeaderRejection};
 use headers::{Authorization, authorization::Bearer};
 use std::{hash::Hash, sync::Arc};
 use stellwerk_common::model::{
-    Id,
     auth::{AuthToken, AuthTokenDecodeError, AuthTokenHashError},
+    id::Id,
     user::UserMarker,
 };
 use stellwerk_db::client::DbClient;
