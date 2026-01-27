@@ -3,7 +3,7 @@ name: stellwerk-prod
 services:
   stellwerk-frontend:
     build:
-      context: ../
+      context: ../stellwerk-frontend/
       dockerfile: docker/stellwerk-frontend/Dockerfile.prod
       target: final
     network_mode: host
@@ -13,7 +13,7 @@ services:
 
   stellwerk-api:
     build:
-      context: ../
+      context: ../crates/
       dockerfile: docker/stellwerk-api/Dockerfile.prod
       target: final
     network_mode: host

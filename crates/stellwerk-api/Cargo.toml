@@ -1,0 +1,29 @@
+[package]
+name = "stellwerk-api"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+stellwerk-common.workspace = true
+stellwerk-db.workspace = true
+
+aide.workspace = true
+axum-extra.workspace = true
+axum.workspace = true
+dotenvy.workspace = true
+envy.workspace = true
+headers.workspace = true
+schemars.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+time.workspace = true
+tokio-util.workspace = true
+tokio.workspace = true
+tower-http.workspace = true
+tracing-subscriber.workspace = true
+tracing.workspace = true
+validator.workspace = true
+
+[lints]
+workspace = true

@@ -3,8 +3,8 @@
 FROM node:25 as final
 WORKDIR /app
 
-RUN --mount=type=bind,source=stellwerk-frontend/package.json,target=package.json,readonly \
-    --mount=type=bind,source=stellwerk-frontend/package-lock.json,target=package-lock.json,readwrite \
+RUN --mount=type=bind,source=package.json,target=package.json,readonly \
+    --mount=type=bind,source=package-lock.json,target=package-lock.json,readwrite \
     npm install
 
 ENV NODE_ENV=development
