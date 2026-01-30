@@ -56,7 +56,7 @@ pub enum AuthTokenDecodeError {
     InvalidSaltLength,
 }
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct AuthToken {
     pub user_id: Id<UserMarker>,
     pub core: [u8; AUTH_TOKEN_CORE_LEN],
@@ -88,7 +88,7 @@ impl AuthToken {
     }
 
     #[must_use]
-    pub fn as_token_str(&self) -> String {
+    pub fn token_str(&self) -> String {
         let user_id = self.user_id;
         let encoded_core = Base64Display::new(&self.core, &BASE64_STANDARD);
         let encoded_salt = Base64Display::new(&self.salt, &BASE64_STANDARD);

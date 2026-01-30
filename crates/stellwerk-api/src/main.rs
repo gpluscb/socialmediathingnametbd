@@ -1,5 +1,6 @@
 #![feature(duration_constructors)]
 
+pub mod oauth2;
 mod open_api;
 mod server;
 
@@ -146,6 +147,7 @@ async fn main() -> Result<(), InitError> {
         .with_state(ServerState {
             db_client: Arc::clone(&db_client),
             open_api: Arc::new(open_api),
+            oauth2_config: Arc::new(oauth2::get_oauth2_config()),
         });
 
     let server_address = SocketAddr::new(env.server_address, env.server_port);

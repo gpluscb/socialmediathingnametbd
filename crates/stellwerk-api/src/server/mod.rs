@@ -1,4 +1,4 @@
-use crate::server::auth::AuthenticationRejection;
+use crate::{oauth2::OAuth2Config, server::auth::AuthenticationRejection};
 use aide::{OperationOutput, axum::ApiRouter, openapi::OpenApi};
 use axum::{
     extract::{
@@ -29,6 +29,7 @@ pub type ServerRouter = ApiRouter<ServerState>;
 pub struct ServerState {
     pub db_client: Arc<DbClient>,
     pub open_api: Arc<OpenApi>,
+    pub oauth2_config: Arc<OAuth2Config>,
 }
 
 pub fn routes() -> ServerRouter {
