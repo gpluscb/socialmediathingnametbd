@@ -29,7 +29,6 @@ pub fn routes() -> ServerRouter {
 #[derive(TypedPath, Deserialize, JsonSchema)]
 #[typed_path("/oauth2/auth-url", rejection(ServerError))]
 struct GetAuthUrlPath {}
-#[serde_with::serde_as]
 #[derive(Deserialize, JsonSchema)]
 struct GetAuthUrlParams {
     provider: OAuth2ProviderChoice,
@@ -68,8 +67,6 @@ async fn get_oauth2_url(
 struct OauthRedirectPath {}
 #[derive(Deserialize, JsonSchema)]
 struct RedirectParams {
-    // TODO: Maybe make this AuthorizationCode/CsrfToken directly?
-    // Need to figure something out about JsonSchem
     code: String,
     csrf_token: String,
     session_id: String,

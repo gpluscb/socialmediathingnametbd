@@ -5,7 +5,6 @@ use oauth2::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::DisplayFromStr;
 use stellwerk_common::model::{id::Id, oauth2::OAuth2ProviderChoice, user::UserMarker};
 use stellwerk_db::client::{DbClient, DbError};
 use thiserror::Error;
@@ -70,16 +69,13 @@ impl OAuth2ProviderList {
     }
 }
 
-#[serde_with::serde_as]
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct AuthUrlResponse {
-    #[serde_as(as = "DisplayFromStr")]
     pub url: Url,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Default, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct AuthTokenResponse {
-    // TODO: Maybe make this AuthToken?
     pub token: String,
 }
 
