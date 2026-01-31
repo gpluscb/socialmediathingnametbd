@@ -106,11 +106,12 @@ pub async fn get_identity_from_discord(
     db: &DbClient,
     access_token: AccessToken,
 ) -> Result<Option<Id<UserMarker>>, OAuth2IdentityRetrievalError> {
-    let authorization_info = twilight_http::Client::new(access_token.into_secret())
-        .current_authorization()
-        .await?
-        .model()
-        .await?;
+    let authorization_info =
+        twilight_http::Client::new(format!("Bearer {}", access_token.into_secret()))
+            .current_authorization()
+            .await?
+            .model()
+            .await?;
 
     let discord_id = authorization_info
         .user
