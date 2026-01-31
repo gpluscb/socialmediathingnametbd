@@ -1,3 +1,4 @@
+use crate::Env;
 use oauth2::{
     AccessToken, AuthUrl, EndpointNotSet, EndpointSet, RevocationUrl, Scope, TokenUrl,
     basic::BasicClient, reqwest, reqwest::redirect::Policy, url::Url,
@@ -11,15 +12,15 @@ use thiserror::Error;
 
 // TODO: Maybe a way to deserialize from toml?
 #[must_use]
-pub fn get_oauth2_config() -> OAuth2Config {
+pub(super) fn get_oauth2_config(env: &Env) -> OAuth2Config {
+    // TODO: Get rid of unwraps here
     OAuth2Config {
         providers: OAuth2ProviderList {
             discord: OAuth2Provider {
-                client: BasicClient::new(todo!("client_id"))
-                    .set_client_secret(todo!("client_secret"))
+                client: BasicClient::new(env.oauth2_discord_client_id.clone())
+                    .set_client_secret(env.oauth2_discord_client_secret.clone())
                     .set_auth_uri(
-                        AuthUrl::new("https://discord.com/oauth2/authorize".to_string())
-                            .expect(todo!()),
+                        AuthUrl::new("https://discord.com/oauth2/authorize".to_string()).unwrap(),
                     )
                     .set_token_uri(
                         TokenUrl::new("https://discord.com/api/oauth2/token".to_string()).unwrap(),
@@ -28,7 +29,7 @@ pub fn get_oauth2_config() -> OAuth2Config {
                         RevocationUrl::new(
                             "https://discord.com/api/oauth2/token/revoke".to_string(),
                         )
-                        .expect(todo!()),
+                        .unwrap(),
                     ),
                 scopes: vec![Scope::new("identify".to_string())],
             },
@@ -36,7 +37,7 @@ pub fn get_oauth2_config() -> OAuth2Config {
         http_client: reqwest::Client::builder()
             .redirect(Policy::none())
             .build()
-            .expect(todo!()),
+            .unwrap(),
     }
 }
 

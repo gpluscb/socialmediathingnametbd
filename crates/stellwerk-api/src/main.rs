@@ -5,6 +5,7 @@ mod open_api;
 mod server;
 
 use crate::server::ServerState;
+use ::oauth2::{ClientId, ClientSecret};
 use serde::Deserialize;
 use std::{
     net::{IpAddr, SocketAddr},
@@ -44,6 +45,8 @@ struct Env {
     database_url: Box<str>,
     worker_id: WorkerId,
     process_id: ProcessId,
+    oauth2_discord_client_id: ClientId,
+    oauth2_discord_client_secret: ClientSecret,
 }
 
 fn install_tracing() {
@@ -145,6 +148,7 @@ async fn main() -> Result<(), InitError> {
 
     let db_client = Arc::new(connect_database(&env).await?);
     let mut open_api = open_api::install_open_api();
+    let oauth2_config = oauth2::get_oauth2_config(&env);
 
     let tracing_layer = TraceLayer::new_for_http();
     let app = server::routes()
@@ -153,7 +157,7 @@ async fn main() -> Result<(), InitError> {
         .with_state(ServerState {
             db_client: Arc::clone(&db_client),
             open_api: Arc::new(open_api),
-            oauth2_config: Arc::new(oauth2::get_oauth2_config()),
+            oauth2_config: Arc::new(oauth2_config),
         });
 
     let server_address = SocketAddr::new(env.server_address, env.server_port);
