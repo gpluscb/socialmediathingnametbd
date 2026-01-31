@@ -29,6 +29,8 @@ EOF
 
 FROM debian:bookworm-slim AS final
 
+RUN apt-get update && apt-get install -y ca-certificates
+
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
 ARG UID=10001

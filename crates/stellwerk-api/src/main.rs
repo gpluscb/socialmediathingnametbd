@@ -36,6 +36,8 @@ enum InitError {
     DatabaseInitialization(DbError),
     #[error("A background task had issues: {0}")]
     Join(#[from] JoinError),
+    #[error("Crypto provider installation failed")]
+    CryptoProviderInstallation,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Deserialize)]
@@ -47,6 +49,14 @@ struct Env {
     process_id: ProcessId,
     oauth2_discord_client_id: ClientId,
     oauth2_discord_client_secret: ClientSecret,
+}
+
+fn install_crypto_provider() -> Result<(), InitError> {
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .map_err(|_| InitError::CryptoProviderInstallation)?;
+
+    Ok(())
 }
 
 fn install_tracing() {
@@ -145,6 +155,8 @@ async fn main() -> Result<(), InitError> {
         debug!("No .env file found");
     }
     let env = get_env()?;
+
+    install_crypto_provider()?;
 
     let db_client = Arc::new(connect_database(&env).await?);
     let mut open_api = open_api::install_open_api();
