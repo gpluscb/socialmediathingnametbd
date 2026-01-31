@@ -22,11 +22,12 @@ pub(super) fn get_oauth2_config(env: &Env) -> OAuth2Config {
                         AuthUrl::new("https://discord.com/oauth2/authorize".to_string()).unwrap(),
                     )
                     .set_token_uri(
-                        TokenUrl::new("https://discord.com/api/oauth2/token".to_string()).unwrap(),
+                        TokenUrl::new("https://discord.com/api/v10/oauth2/token".to_string())
+                            .unwrap(),
                     )
                     .set_revocation_url(
                         RevocationUrl::new(
-                            "https://discord.com/api/oauth2/token/revoke".to_string(),
+                            "https://discord.com/api/v10/oauth2/token/revoke".to_string(),
                         )
                         .unwrap(),
                     ),
