@@ -90,6 +90,12 @@ async fn db_prune_loop(db: Arc<DbClient>, cancellation: CancellationToken) {
             Ok(dropped_rows) => debug!("Dropped {dropped_rows} expired tokens"),
             Err(error) => error!(%error, "Error trying to drop expired tokens"),
         }
+
+        match db.drop_expired_oauth2_states().await {
+            Ok(dropped_rows) => debug!("Dropped {dropped_rows} expired oauth2 states"),
+            Err(error) => error!(%error, "Error trying to drop expired oauth2 states"),
+        }
+
         if cancellation
             .run_until_cancelled(tokio::time::sleep(std::time::Duration::from_days(1)))
             .await

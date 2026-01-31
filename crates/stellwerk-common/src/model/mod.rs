@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod id;
+pub mod oauth2;
 pub mod pagination;
 pub mod post;
 pub mod user;
@@ -9,6 +10,7 @@ use crate::{
     util::NonPositiveDurationError,
 };
 use thiserror::Error;
+
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Error)]
 pub enum ModelValidationError {
     #[error(transparent)]

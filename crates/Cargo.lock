@@ -2518,6 +2518,7 @@ dependencies = [
  "argon2",
  "base64",
  "derive-where",
+ "oauth2",
  "rand 0.9.2",
  "schemars 1.2.0",
  "serde",
@@ -2530,6 +2531,7 @@ dependencies = [
 name = "stellwerk-db"
 version = "0.1.0"
 dependencies = [
+ "oauth2",
  "sqlx",
  "stellwerk-common",
  "thiserror 2.0.18",

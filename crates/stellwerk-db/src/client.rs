@@ -1,10 +1,14 @@
-use crate::record::{AuthenticationRecord, PartialPostRecord, PostRecord, UserRecord};
+use crate::record::{
+    AuthenticationRecord, OAuth2ProviderChoiceRecord, OAuth2StateRecord,
+    OAuth2UserIdentityDiscordRecord, PartialPostRecord, PostRecord, UserRecord,
+};
 use sqlx::{PgPool, migrate, migrate::MigrateError, query, query_as, query_scalar};
 use stellwerk_common::{
     model::{
         ModelValidationError,
         auth::{AuthTokenHash, Authentication},
         id::{Id, StellwerkSnowflakeGenerator},
+        oauth2::{OAuth2State, OAuth2UserIdentityDiscord},
         pagination::PaginationReference,
         post::{PartialPost, Post, PostContent, PostMarker},
         user::{CreateUser, User, UserHandle, UserMarker},
@@ -283,7 +287,7 @@ impl DbClient {
     ) -> Result<PartialPost> {
         let post_snowflake = self.snowflake_generator.generate();
 
-        let returned_record = query_as!(
+        let returned_post = query_as!(
             PartialPostRecord,
             "
             INSERT INTO posts.posts (post_snowflake, content, user_snowflake)
@@ -298,9 +302,10 @@ impl DbClient {
         .await?
         .try_into()?;
 
-        Ok(returned_record)
+        Ok(returned_post)
     }
 
+    /// May return expired token
     pub async fn fetch_auth(&self, token_hash: &AuthTokenHash) -> Result<Option<Authentication>> {
         let record = query_as!(
             AuthenticationRecord,
@@ -343,5 +348,123 @@ impl DbClient {
         .rows_affected();
 
         Ok(rows_affected)
+    }
+
+    /// May return expired oauth2 state
+    pub async fn fetch_oauth2_state(&self, session_id: &str) -> Result<Option<OAuth2State>> {
+        let record = sqlx::query_as!(
+            OAuth2StateRecord,
+            r#"
+            SELECT
+                session_id,
+                auth_provider as "auth_provider: OAuth2ProviderChoiceRecord",
+                csrf_token,
+                expires_at
+            FROM
+                auth.oauth2_temp_states
+            WHERE
+                oauth2_temp_states.session_id = $1
+            "#,
+            session_id,
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let oauth2_state = record.map(OAuth2State::try_from).transpose()?;
+        Ok(oauth2_state)
+    }
+
+    pub async fn create_oauth2_state(&self, oauth2_state: &OAuth2State) -> Result<OAuth2State> {
+        let oauth2_provider_choice: OAuth2ProviderChoiceRecord = oauth2_state.auth_provider.into();
+        let expires_at = PrimitiveDateTime::new(
+            oauth2_state.expires_at.date(),
+            oauth2_state.expires_at.time(),
+        );
+
+        let returned_oauth2_state = query_as!(
+            OAuth2StateRecord,
+            r#"
+            INSERT INTO
+                auth.oauth2_temp_states (session_id, auth_provider, csrf_token, expires_at)
+            VALUES
+                ($1, $2, $3, $4)
+            RETURNING
+                session_id,
+                auth_provider as "auth_provider: OAuth2ProviderChoiceRecord",
+                csrf_token,
+                expires_at
+            "#,
+            oauth2_state.session_id,
+            oauth2_provider_choice as OAuth2ProviderChoiceRecord,
+            oauth2_state.csrf_token.secret(),
+            expires_at,
+        )
+        .fetch_one(&self.pool)
+        .await?
+        .try_into()?;
+
+        Ok(returned_oauth2_state)
+    }
+
+    pub async fn delete_oauth2_state(&self, session_id: &str) -> Result<bool> {
+        let rows_affected = sqlx::query!(
+            "
+                    DELETE FROM auth.oauth2_temp_states
+                    WHERE oauth2_temp_states.session_id = $1
+                    ",
+            session_id,
+        )
+        .execute(&self.pool)
+        .await?
+        .rows_affected();
+
+        Ok(rows_affected > 0)
+    }
+
+    /// Returns number of affected rows
+    pub async fn drop_expired_oauth2_states(&self) -> Result<u64> {
+        let now_utc = UtcDateTime::now();
+        let now_primitive = PrimitiveDateTime::new(now_utc.date(), now_utc.time());
+
+        let rows_affected = query!(
+            "
+            DELETE FROM auth.oauth2_temp_states
+            WHERE oauth2_temp_states.expires_at < $1
+            ",
+            now_primitive,
+        )
+        .execute(&self.pool)
+        .await?
+        .rows_affected();
+
+        Ok(rows_affected)
+    }
+
+    pub async fn fetch_oauth2_identity_discord(
+        &self,
+        discord_id: u64,
+    ) -> Result<Option<OAuth2UserIdentityDiscord>> {
+        let record = sqlx::query_as!(
+            OAuth2UserIdentityDiscordRecord,
+            r#"
+            SELECT
+                users.user_snowflake,
+                users.oauth2_discord_id as "oauth2_discord_id!"
+            FROM
+                users.users
+            WHERE
+                oauth2_discord_id IS NOT NULL
+              AND
+                oauth2_discord_id = $1
+            "#,
+            discord_id.cast_signed(),
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let identity = record
+            .map(OAuth2UserIdentityDiscord::try_from)
+            .transpose()?;
+        Ok(identity)
     }
 }

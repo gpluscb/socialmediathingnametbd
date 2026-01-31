@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 stellwerk-common.workspace = true
 
+oauth2.workspace = true
 sqlx.workspace = true
 thiserror.workspace = true
 time.workspace = true

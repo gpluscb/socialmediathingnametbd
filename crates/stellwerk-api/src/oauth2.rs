@@ -5,6 +5,7 @@ use oauth2::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;
+use stellwerk_common::model::oauth2::OAuth2ProviderChoice;
 
 // TODO: Maybe a way to deserialize from toml?
 #[must_use]
@@ -64,13 +65,6 @@ impl OAuth2ProviderList {
             OAuth2ProviderChoice::Discord => &self.discord,
         }
     }
-}
-
-#[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Serialize, Deserialize, JsonSchema,
-)]
-pub enum OAuth2ProviderChoice {
-    Discord,
 }
 
 #[serde_with::serde_as]

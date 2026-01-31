@@ -1,5 +1,5 @@
 use crate::{
-    oauth2::{AuthTokenResponse, AuthUrlResponse, OAuth2Config, OAuth2ProviderChoice},
+    oauth2::{AuthTokenResponse, AuthUrlResponse, OAuth2Config},
     server::{
         Result, ServerError, ServerRouter, json::Json, query::Query, typed_path::PathWrapper,
     },
@@ -10,7 +10,7 @@ use oauth2::{AuthorizationCode, CsrfToken, RedirectUrl, TokenResponse, url::Url}
 use schemars::JsonSchema;
 use serde::Deserialize;
 use std::{borrow::Cow, sync::Arc};
-use stellwerk_common::model::auth::AuthToken;
+use stellwerk_common::model::{auth::AuthToken, oauth2::OAuth2ProviderChoice};
 use stellwerk_db::client::DbClient;
 
 pub fn routes() -> ServerRouter {

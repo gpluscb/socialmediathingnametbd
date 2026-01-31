@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    DELETE FROM auth.oauth2_temp_states\n                    WHERE oauth2_temp_states.session_id = $1\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "964396125b17181b2c29d68b0ccbe7fa3b86c8a90c2c8f1871bdb6afc661fb8b"
+}
