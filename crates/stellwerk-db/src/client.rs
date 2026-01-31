@@ -329,6 +329,32 @@ impl DbClient {
         Ok(authentication)
     }
 
+    pub async fn create_auth(&self, authentication: &Authentication) -> Result<()> {
+        let created_at = PrimitiveDateTime::new(
+            authentication.created_at.date(),
+            authentication.created_at.time(),
+        );
+
+        query!(
+            "
+            INSERT INTO
+                auth.auth_tokens (user_snowflake, token_hash, created_at, expires_after_seconds)
+            VALUES
+                ($1, $2, $3, $4)
+            ",
+            authentication.user.snowflake().get().cast_signed(),
+            &authentication.token_hash.0,
+            created_at,
+            authentication
+                .expires_after
+                .map(|duration| duration.get().whole_seconds()),
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
     /// Returns number of affected rows
     pub async fn drop_expired_tokens(&self) -> Result<u64> {
         let now_utc = UtcDateTime::now();

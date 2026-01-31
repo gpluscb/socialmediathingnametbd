@@ -10,9 +10,12 @@ use oauth2::{AuthorizationCode, CsrfToken, RedirectUrl, TokenResponse, url::Url}
 use schemars::JsonSchema;
 use serde::Deserialize;
 use std::{borrow::Cow, sync::Arc};
-use stellwerk_common::model::{
-    auth::AuthToken,
-    oauth2::{OAuth2ProviderChoice, OAuth2State},
+use stellwerk_common::{
+    model::{
+        auth::{AuthToken, Authentication},
+        oauth2::{OAuth2ProviderChoice, OAuth2State},
+    },
+    util::PositiveDuration,
 };
 use stellwerk_db::client::DbClient;
 use time::{Duration, UtcDateTime};
@@ -70,6 +73,7 @@ struct RedirectParams {
     code: String,
     csrf_token: String,
     session_id: String,
+    expires: bool,
 }
 
 async fn get_oauth2_authentication(
@@ -140,7 +144,20 @@ async fn get_oauth2_authentication(
     let random_token = AuthToken::generate_random(user_id);
     let hash = random_token.hash().expect(todo!());
 
-    todo!("Store auth provider refresh token and generated token hash to DB");
+    let expires_after = if params.expires {
+        Some(PositiveDuration::new_unchecked(Duration::days(1)))
+    } else {
+        None
+    };
+
+    let authentication = Authentication {
+        user: user_id,
+        token_hash: hash,
+        created_at: UtcDateTime::now(),
+        expires_after,
+    };
+
+    db.create_auth(&authentication).await?;
 
     Ok(Json(AuthTokenResponse {
         token: random_token.token_str(),
