@@ -83,19 +83,19 @@ async fn get_oauth2_authentication(
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<AuthTokenResponse>> {
     let code = AuthorizationCode::new(params.code);
-    let state = CsrfToken::new(params.csrf_token);
+    let csrf_token = CsrfToken::new(params.csrf_token);
 
     let stored_oauth2_state = db
         .fetch_oauth2_state(&params.session_id)
         .await?
-        .expect(todo!());
+        .ok_or_else(|| ServerError::OAuth2NoStateForSession(params.session_id.clone()))?;
 
     if stored_oauth2_state.expires_at < UtcDateTime::now() {
-        return Err(todo!());
+        return Err(ServerError::OAuth2NoStateForSession(params.session_id));
     }
 
-    if stored_oauth2_state.csrf_token != CsrfToken::new(params.csrf_token) {
-        return Err(todo!());
+    if stored_oauth2_state.csrf_token != csrf_token {
+        return Err(ServerError::OAuth2WrongCsrfToken);
     }
 
     // State has been used and can be deleted
@@ -112,31 +112,25 @@ async fn get_oauth2_authentication(
         .client
         .exchange_code(code)
         .request_async(&oauth2_config.http_client)
-        .await
-        .expect(todo!());
-    let token_type = token_response.token_type();
+        .await?;
     let access_token = token_response.access_token();
-    let scopes = token_response.scopes();
 
     // Use auth provider token to verify identity
     let user_id =
         get_identity_from_provider(&db, stored_oauth2_state.auth_provider, access_token.clone())
-            .await
-            .expect(todo!())
-            .expect(todo!("No associated account. Register?"));
+            .await?
+            .ok_or(ServerError::OAuth2NoAssociatedUser)?;
 
     // Auth provider token is useless after identity verification, revoke
     auth_provider
         .client
-        .revoke_token(access_token.into())
-        .expect(todo!())
+        .revoke_token(access_token.into())?
         .request_async(&oauth2_config.http_client)
-        .await
-        .expect(todo!());
+        .await?;
 
     // Generate new api token for user
     let random_token = AuthToken::generate_random(user_id);
-    let hash = random_token.hash().expect(todo!());
+    let hash = random_token.hash()?;
 
     let expires_after = if params.expires {
         // TODO: This duration should probably be configurable for the server

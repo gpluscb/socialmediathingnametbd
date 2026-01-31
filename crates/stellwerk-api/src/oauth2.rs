@@ -6,7 +6,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;
 use stellwerk_common::model::{id::Id, oauth2::OAuth2ProviderChoice, user::UserMarker};
-use stellwerk_db::client::DbClient;
+use stellwerk_db::client::{DbClient, DbError};
+use thiserror::Error;
 
 // TODO: Maybe a way to deserialize from toml?
 #[must_use]
@@ -81,11 +82,23 @@ pub struct AuthTokenResponse {
     pub token: String,
 }
 
+#[derive(Debug, Error)]
+pub enum OAuth2IdentityRetrievalError {
+    #[error(transparent)]
+    DiscordRequest(#[from] twilight_http::Error),
+    #[error(transparent)]
+    DiscordResponseDeserialize(#[from] twilight_http::response::DeserializeBodyError),
+    #[error("Discord identify response did not contain user")]
+    DiscordResponseUserNotPresent,
+    #[error(transparent)]
+    Database(#[from] DbError),
+}
+
 pub async fn get_identity_from_provider(
     db: &DbClient,
     oauth2provider_choice: OAuth2ProviderChoice,
     access_token: AccessToken,
-) -> Result<Option<Id<UserMarker>>, ()> {
+) -> Result<Option<Id<UserMarker>>, OAuth2IdentityRetrievalError> {
     match oauth2provider_choice {
         OAuth2ProviderChoice::Discord => get_identity_from_discord(db, access_token).await,
     }
@@ -94,21 +107,19 @@ pub async fn get_identity_from_provider(
 pub async fn get_identity_from_discord(
     db: &DbClient,
     access_token: AccessToken,
-) -> Result<Option<Id<UserMarker>>, ()> {
+) -> Result<Option<Id<UserMarker>>, OAuth2IdentityRetrievalError> {
     let authorization_info = twilight_http::Client::new(access_token.into_secret())
         .current_authorization()
-        .await
-        .expect(todo!())
+        .await?
         .model()
-        .await
-        .expect(todo!());
+        .await?;
 
-    let discord_id = authorization_info.user.expect(todo!()).id;
+    let discord_id = authorization_info
+        .user
+        .ok_or(OAuth2IdentityRetrievalError::DiscordResponseUserNotPresent)?
+        .id;
 
-    let identity = db
-        .fetch_oauth2_identity_discord(discord_id.get())
-        .await
-        .expect(todo!(""));
+    let identity = db.fetch_oauth2_identity_discord(discord_id.get()).await?;
 
     let user_id = identity.map(|identity| identity.user_id);
     Ok(user_id)
