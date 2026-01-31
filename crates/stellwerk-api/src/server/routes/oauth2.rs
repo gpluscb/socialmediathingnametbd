@@ -116,6 +116,7 @@ async fn get_oauth2_authentication(
         .await?;
     let access_token = token_response.access_token();
 
+    // TODO: Maybe we should revoke if this fails also
     // Use auth provider token to verify identity
     let user_id =
         get_identity_from_provider(&db, stored_oauth2_state.auth_provider, access_token.clone())

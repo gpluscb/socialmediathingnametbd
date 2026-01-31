@@ -274,6 +274,7 @@ export interface components {
             token: string;
         };
         AuthUrlResponse: {
+            /** Format: uri */
             url: string;
         };
         /**
