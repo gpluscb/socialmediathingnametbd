@@ -10,8 +10,12 @@ use oauth2::{AuthorizationCode, CsrfToken, RedirectUrl, TokenResponse, url::Url}
 use schemars::JsonSchema;
 use serde::Deserialize;
 use std::{borrow::Cow, sync::Arc};
-use stellwerk_common::model::{auth::AuthToken, oauth2::OAuth2ProviderChoice};
+use stellwerk_common::model::{
+    auth::AuthToken,
+    oauth2::{OAuth2ProviderChoice, OAuth2State},
+};
 use stellwerk_db::client::DbClient;
+use time::{Duration, UtcDateTime};
 
 pub fn routes() -> ServerRouter {
     ServerRouter::new()
@@ -20,13 +24,14 @@ pub fn routes() -> ServerRouter {
 }
 
 #[derive(TypedPath, Deserialize, JsonSchema)]
-#[typed_path("/oauth/auth-url", rejection(ServerError))]
+#[typed_path("/oauth2/auth-url", rejection(ServerError))]
 struct GetAuthUrlPath {}
 #[serde_with::serde_as]
 #[derive(Deserialize, JsonSchema)]
 struct GetAuthUrlParams {
     provider: OAuth2ProviderChoice,
     redirect: Url,
+    session_id: String,
 }
 
 async fn get_oauth2_url(
@@ -44,19 +49,27 @@ async fn get_oauth2_url(
         .add_scopes(oauth2_provider.scopes.iter().cloned())
         .url();
 
-    todo!("Store csrf token together with auth provider choice");
+    let oauth2_state = OAuth2State {
+        session_id: params.session_id,
+        auth_provider: params.provider,
+        csrf_token,
+        expires_at: UtcDateTime::now() + Duration::minutes(30),
+    };
+    db.create_oauth2_state(&oauth2_state).await?;
+
     Ok(Json(AuthUrlResponse { url }))
 }
 
 #[derive(TypedPath, Deserialize, JsonSchema)]
-#[typed_path("/oauth/redirect", rejection(ServerError))]
+#[typed_path("/oauth2/redirect", rejection(ServerError))]
 struct OauthRedirectPath {}
 #[derive(Deserialize, JsonSchema)]
 struct RedirectParams {
     // TODO: Maybe make this AuthorizationCode/CsrfToken directly?
     // Need to figure something out about JsonSchem
     code: String,
-    state: String,
+    csrf_token: String,
+    session_id: String,
 }
 
 async fn get_oauth2_authentication(
@@ -66,11 +79,26 @@ async fn get_oauth2_authentication(
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<AuthTokenResponse>> {
     let code = AuthorizationCode::new(params.code);
-    let state = CsrfToken::new(params.state);
+    let state = CsrfToken::new(params.csrf_token);
 
-    todo!("Verify state");
+    let stored_oauth2_state = db
+        .fetch_oauth2_state(&params.session_id)
+        .await?
+        .expect(todo!());
 
-    let auth_provider = &oauth2_config.providers.discord; // TODO: From state
+    if stored_oauth2_state.expires_at < UtcDateTime::now() {
+        return Err(todo!());
+    }
+
+    if stored_oauth2_state.csrf_token != CsrfToken::new(params.csrf_token) {
+        return Err(todo!());
+    }
+
+    db.delete_oauth2_state(&params.session_id).await?;
+
+    let auth_provider = oauth2_config
+        .providers
+        .get_provider(stored_oauth2_state.auth_provider);
 
     // Get auth provider token
     let token_response = auth_provider
@@ -81,21 +109,39 @@ async fn get_oauth2_authentication(
         .expect(todo!());
     let token_type = token_response.token_type();
     let access_token = token_response.access_token();
-    let refresh_token = token_response.refresh_token();
-    let expires_in = token_response.expires_in();
     let scopes = token_response.scopes();
 
-    let authorization_info = twilight_http::Client::new(access_token.into_secret())
+    // TODO: Most of this is Discord specific. Outsource to OAuth2Provider
+    let authorization_info = twilight_http::Client::new(access_token.secret().to_string())
         .current_authorization()
         .await
         .expect(todo!())
         .model()
         .await
         .expect(todo!());
-    todo!("Verify identity");
-    let random_token = AuthToken::generate_random(todo!("user_id"));
-    let hash = random_token.hash();
+
+    let discord_id = authorization_info.user.expect(todo!()).id;
+
+    auth_provider
+        .client
+        .revoke_token(access_token.into())
+        .expect(todo!())
+        .request_async(&oauth2_config.http_client)
+        .await
+        .expect(todo!());
+
+    let identity = db
+        .fetch_oauth2_identity_discord(discord_id.get())
+        .await?
+        .expect(todo!("No associated account. Register?"));
+
+    let user_id = identity.user_id;
+
+    let random_token = AuthToken::generate_random(user_id);
+    let hash = random_token.hash().expect(todo!());
+
     todo!("Store auth provider refresh token and generated token hash to DB");
+
     Ok(Json(AuthTokenResponse {
         token: random_token.token_str(),
     }))
