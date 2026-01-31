@@ -43,11 +43,12 @@ async fn get_oauth2_url(
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<AuthUrlResponse>> {
     let oauth2_provider = oauth2_config.providers.get_provider(params.provider);
+    let redirect_url = RedirectUrl::from_url(params.redirect);
 
     let (url, csrf_token) = oauth2_provider
         .client
         .authorize_url(CsrfToken::new_random)
-        .set_redirect_uri(Cow::Owned(RedirectUrl::from_url(params.redirect)))
+        .set_redirect_uri(Cow::Borrowed(&redirect_url))
         .add_scopes(oauth2_provider.scopes.iter().cloned())
         .url();
 
@@ -55,6 +56,7 @@ async fn get_oauth2_url(
         session_id: params.session_id,
         auth_provider: params.provider,
         csrf_token,
+        redirect_url,
         expires_at: UtcDateTime::now() + Duration::minutes(30),
     };
     db.create_oauth2_state(&oauth2_state).await?;
@@ -62,6 +64,7 @@ async fn get_oauth2_url(
     Ok(Json(AuthUrlResponse { url }))
 }
 
+// TODO: Names should match route
 #[derive(TypedPath, Deserialize, JsonSchema)]
 #[typed_path("/oauth2/redirect", rejection(ServerError))]
 struct OauthRedirectPath {}
@@ -108,6 +111,7 @@ async fn get_oauth2_authentication(
     let token_response = auth_provider
         .client
         .exchange_code(code)
+        .set_redirect_uri(Cow::Owned(stored_oauth2_state.redirect_url))
         .request_async(&oauth2_config.http_client)
         .await?;
     let access_token = token_response.access_token();

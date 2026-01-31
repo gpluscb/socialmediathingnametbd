@@ -1,4 +1,4 @@
-use oauth2::CsrfToken;
+use oauth2::{CsrfToken, RedirectUrl};
 use stellwerk_common::model::{
     ModelValidationError,
     auth::Authentication,
@@ -48,6 +48,7 @@ pub(crate) struct OAuth2StateRecord {
     pub session_id: String,
     pub auth_provider: OAuth2ProviderChoiceRecord,
     pub csrf_token: String,
+    pub redirect_url: String,
     pub expires_at: PrimitiveDateTime,
 }
 
@@ -141,6 +142,7 @@ impl TryFrom<OAuth2StateRecord> for OAuth2State {
             session_id: value.session_id,
             auth_provider: value.auth_provider.try_into()?,
             csrf_token: CsrfToken::new(value.csrf_token),
+            redirect_url: RedirectUrl::new(value.redirect_url)?,
             expires_at: value.expires_at.as_utc(),
         })
     }

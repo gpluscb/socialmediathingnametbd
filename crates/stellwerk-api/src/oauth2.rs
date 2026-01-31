@@ -77,6 +77,7 @@ pub struct AuthUrlResponse {
 #[derive(Clone, Eq, PartialEq, Debug, Default, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct AuthTokenResponse {
     pub token: String,
+    // TODO: Expires at
 }
 
 #[derive(Debug, Error)]

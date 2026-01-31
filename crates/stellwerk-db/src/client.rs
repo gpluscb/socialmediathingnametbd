@@ -385,6 +385,7 @@ impl DbClient {
                 session_id,
                 auth_provider as "auth_provider: OAuth2ProviderChoiceRecord",
                 csrf_token,
+                redirect_url,
                 expires_at
             FROM
                 auth.oauth2_temp_states
@@ -411,18 +412,20 @@ impl DbClient {
             OAuth2StateRecord,
             r#"
             INSERT INTO
-                auth.oauth2_temp_states (session_id, auth_provider, csrf_token, expires_at)
+                auth.oauth2_temp_states (session_id, auth_provider, csrf_token, redirect_url, expires_at)
             VALUES
-                ($1, $2, $3, $4)
+                ($1, $2, $3, $4, $5)
             RETURNING
                 session_id,
                 auth_provider as "auth_provider: OAuth2ProviderChoiceRecord",
                 csrf_token,
+                redirect_url,
                 expires_at
             "#,
             oauth2_state.session_id,
             oauth2_provider_choice as OAuth2ProviderChoiceRecord,
             oauth2_state.csrf_token.secret(),
+            oauth2_state.redirect_url.as_str(),
             expires_at,
         )
         .fetch_one(&self.pool)

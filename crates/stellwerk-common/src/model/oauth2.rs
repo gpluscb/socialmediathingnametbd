@@ -1,5 +1,5 @@
 use crate::model::{id::Id, user::UserMarker};
-use oauth2::CsrfToken;
+use oauth2::{CsrfToken, RedirectUrl};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use time::UtcDateTime;
@@ -16,6 +16,7 @@ pub struct OAuth2State {
     pub session_id: String,
     pub auth_provider: OAuth2ProviderChoice,
     pub csrf_token: CsrfToken,
+    pub redirect_url: RedirectUrl,
     pub expires_at: UtcDateTime,
 }
 

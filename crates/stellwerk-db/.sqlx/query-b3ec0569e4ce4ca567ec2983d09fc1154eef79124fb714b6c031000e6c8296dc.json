@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n                session_id,\n                auth_provider as \"auth_provider: OAuth2ProviderChoiceRecord\",\n                csrf_token,\n                expires_at\n            FROM\n                auth.oauth2_temp_states\n            WHERE\n                oauth2_temp_states.session_id = $1\n            ",
+  "query": "\n            SELECT\n                session_id,\n                auth_provider as \"auth_provider: OAuth2ProviderChoiceRecord\",\n                csrf_token,\n                redirect_url,\n                expires_at\n            FROM\n                auth.oauth2_temp_states\n            WHERE\n                oauth2_temp_states.session_id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -47,6 +47,17 @@
       },
       {
         "ordinal": 3,
+        "name": "redirect_url",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "auth.oauth2_temp_states",
+            "name": "redirect_url"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
         "name": "expires_at",
         "type_info": "Timestamp",
         "origin": {
@@ -66,8 +77,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "3f46e6346155c64b23d27522009d528a8b02476cd8c8fdf0dd01c84f82744968"
+  "hash": "b3ec0569e4ce4ca567ec2983d09fc1154eef79124fb714b6c031000e6c8296dc"
 }
