@@ -1,5 +1,5 @@
 use crate::{
-    oauth2::{AuthTokenResponse, AuthUrlResponse, OAuth2Config},
+    oauth2::{AuthTokenResponse, AuthUrlResponse, OAuth2Config, get_identity_from_provider},
     server::{
         Result, ServerError, ServerRouter, json::Json, query::Query, typed_path::PathWrapper,
     },
@@ -98,6 +98,9 @@ async fn get_oauth2_authentication(
         return Err(todo!());
     }
 
+    // State has been used and can be deleted
+    // Since we don't use transactions, a user could use a race to use the same oauth2 state
+    // multiple times to generate multiple tokens, but this is not harmful.
     db.delete_oauth2_state(&params.session_id).await?;
 
     let auth_provider = oauth2_config
@@ -115,17 +118,14 @@ async fn get_oauth2_authentication(
     let access_token = token_response.access_token();
     let scopes = token_response.scopes();
 
-    // TODO: Most of this is Discord specific. Outsource to OAuth2Provider
-    let authorization_info = twilight_http::Client::new(access_token.secret().to_string())
-        .current_authorization()
-        .await
-        .expect(todo!())
-        .model()
-        .await
-        .expect(todo!());
+    // Use auth provider token to verify identity
+    let user_id =
+        get_identity_from_provider(&db, stored_oauth2_state.auth_provider, access_token.clone())
+            .await
+            .expect(todo!())
+            .expect(todo!("No associated account. Register?"));
 
-    let discord_id = authorization_info.user.expect(todo!()).id;
-
+    // Auth provider token is useless after identity verification, revoke
     auth_provider
         .client
         .revoke_token(access_token.into())
@@ -134,17 +134,12 @@ async fn get_oauth2_authentication(
         .await
         .expect(todo!());
 
-    let identity = db
-        .fetch_oauth2_identity_discord(discord_id.get())
-        .await?
-        .expect(todo!("No associated account. Register?"));
-
-    let user_id = identity.user_id;
-
+    // Generate new api token for user
     let random_token = AuthToken::generate_random(user_id);
     let hash = random_token.hash().expect(todo!());
 
     let expires_after = if params.expires {
+        // TODO: This duration should probably be configurable for the server
         Some(PositiveDuration::new_unchecked(Duration::days(1)))
     } else {
         None
@@ -157,6 +152,7 @@ async fn get_oauth2_authentication(
         expires_after,
     };
 
+    // Store newly created authentication
     db.create_auth(&authentication).await?;
 
     Ok(Json(AuthTokenResponse {

@@ -1,11 +1,12 @@
 use oauth2::{
-    AuthUrl, EndpointNotSet, EndpointSet, RevocationUrl, Scope, TokenUrl, basic::BasicClient,
-    reqwest, reqwest::redirect::Policy, url::Url,
+    AccessToken, AuthUrl, EndpointNotSet, EndpointSet, RevocationUrl, Scope, TokenUrl,
+    basic::BasicClient, reqwest, reqwest::redirect::Policy, url::Url,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;
-use stellwerk_common::model::oauth2::OAuth2ProviderChoice;
+use stellwerk_common::model::{id::Id, oauth2::OAuth2ProviderChoice, user::UserMarker};
+use stellwerk_db::client::DbClient;
 
 // TODO: Maybe a way to deserialize from toml?
 #[must_use]
@@ -78,4 +79,37 @@ pub struct AuthUrlResponse {
 pub struct AuthTokenResponse {
     // TODO: Maybe make this AuthToken?
     pub token: String,
+}
+
+pub async fn get_identity_from_provider(
+    db: &DbClient,
+    oauth2provider_choice: OAuth2ProviderChoice,
+    access_token: AccessToken,
+) -> Result<Option<Id<UserMarker>>, ()> {
+    match oauth2provider_choice {
+        OAuth2ProviderChoice::Discord => get_identity_from_discord(db, access_token).await,
+    }
+}
+
+pub async fn get_identity_from_discord(
+    db: &DbClient,
+    access_token: AccessToken,
+) -> Result<Option<Id<UserMarker>>, ()> {
+    let authorization_info = twilight_http::Client::new(access_token.into_secret())
+        .current_authorization()
+        .await
+        .expect(todo!())
+        .model()
+        .await
+        .expect(todo!());
+
+    let discord_id = authorization_info.user.expect(todo!()).id;
+
+    let identity = db
+        .fetch_oauth2_identity_discord(discord_id.get())
+        .await
+        .expect(todo!(""));
+
+    let user_id = identity.map(|identity| identity.user_id);
+    Ok(user_id)
 }
