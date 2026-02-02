@@ -12,15 +12,18 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 		maxAge: 30 * 60,
 		httpOnly: true,
 		sameSite: 'lax',
+		// TODO: Make secure once tls is set up
 		// secure: true,
 	});
 
 	if (redirect_param) {
 		cookies.set('redirect', redirect_param, {
 			path: '/auth',
+			// TODO: Configurable for the server
 			maxAge: 30 * 60,
 			httpOnly: true,
 			sameSite: 'lax',
+			// TODO: Make secure once tls is set up
 			// secure: true,
 		});
 	}

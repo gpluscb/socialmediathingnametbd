@@ -22,9 +22,11 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 
     cookies.set('api_token', token, {
         path: '/',
+        // TODO: From API response
         maxAge: 60 * 60 * 48,
         httpOnly: true,
         sameSite: true,
+        // TODO: Make secure once tls is set up
         // secure: true,
     });
 
