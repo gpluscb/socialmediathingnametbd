@@ -51,7 +51,7 @@ export async function getRecentPosts(
 	return response.data;
 }
 
-export async function getOAuth2Url(
+export async function getAuthUrl(
 	provider: OAuth2ProviderChoice,
 	redirect: URL,
 	session_id: string,
@@ -73,13 +73,13 @@ export async function getOAuth2Url(
 	return response.data;
 }
 
-export async function getOAuth2Authentication(
+export async function getToken(
 	code: string,
 	csrf_token: string,
 	session_id: string,
 	expires: boolean,
 ): Promise<AuthTokenResponse> {
-	const response = await CLIENT.GET('/oauth2/redirect', {
+	const response = await CLIENT.GET('/oauth2/get-token', {
 		params: {
 			query: {
 				code,

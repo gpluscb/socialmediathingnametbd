@@ -23,7 +23,7 @@ use time::{Duration, UtcDateTime};
 pub fn routes() -> ServerRouter {
     ServerRouter::new()
         .typed_get(get_oauth2_url)
-        .typed_get(get_oauth2_authentication)
+        .typed_get(get_token)
 }
 
 #[derive(TypedPath, Deserialize, JsonSchema)]
@@ -64,21 +64,20 @@ async fn get_oauth2_url(
     Ok(Json(AuthUrlResponse { url }))
 }
 
-// TODO: Names should match route
 #[derive(TypedPath, Deserialize, JsonSchema)]
-#[typed_path("/oauth2/redirect", rejection(ServerError))]
-struct OauthRedirectPath {}
+#[typed_path("/oauth2/get-token", rejection(ServerError))]
+struct GetTokenPath {}
 #[derive(Deserialize, JsonSchema)]
-struct RedirectParams {
+struct GetTokenParams {
     code: String,
     csrf_token: String,
     session_id: String,
     expires: bool,
 }
 
-async fn get_oauth2_authentication(
-    PathWrapper(OauthRedirectPath {}): PathWrapper<OauthRedirectPath>,
-    Query(params): Query<RedirectParams>,
+async fn get_token(
+    PathWrapper(GetTokenPath {}): PathWrapper<GetTokenPath>,
+    Query(params): Query<GetTokenParams>,
     State(oauth2_config): State<Arc<OAuth2Config>>,
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<AuthTokenResponse>> {

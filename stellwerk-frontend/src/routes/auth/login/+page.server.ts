@@ -1,7 +1,7 @@
 import { randomBytes } from 'crypto';
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { getOAuth2Url } from '$lib/api/client';
+import { getAuthUrl } from '$lib/api/client';
 
 export const load: PageServerLoad = async ({ cookies, url }) => {
 	let random_session_id = randomBytes(16).toString('base64');
@@ -28,7 +28,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 		});
 	}
 
-	let { url: redirect_url } = await getOAuth2Url(
+	let { url: redirect_url } = await getAuthUrl(
 		'Discord',
 		new URL('/auth/redirect', url),
 		random_session_id,

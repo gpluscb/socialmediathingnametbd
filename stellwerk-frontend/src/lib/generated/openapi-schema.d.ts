@@ -225,7 +225,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/oauth2/redirect": {
+    "/oauth2/get-token": {
         parameters: {
             query?: never;
             header?: never;
@@ -451,6 +451,12 @@ export interface components {
             provider: components["schemas"]["OAuth2ProviderChoice"];
             /** Format: uri */
             redirect: string;
+            session_id: string;
+        };
+        GetTokenParams: {
+            code: string;
+            csrf_token: string;
+            expires: boolean;
             session_id: string;
         };
         /**
@@ -1235,12 +1241,6 @@ export interface components {
             pagination_reference: components["schemas"]["PaginationReference"];
             /** Format: uint32 */
             per_page: number;
-        };
-        RedirectParams: {
-            code: string;
-            csrf_token: string;
-            expires: boolean;
-            session_id: string;
         };
         ReferenceOr: {
             /**

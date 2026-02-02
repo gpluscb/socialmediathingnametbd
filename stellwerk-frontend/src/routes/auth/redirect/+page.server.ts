@@ -1,4 +1,4 @@
-import { getOAuth2Authentication } from '$lib/api/client';
+import { getToken } from '$lib/api/client';
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
@@ -18,7 +18,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
         error(500);
     }
 
-    let { token } = await getOAuth2Authentication(code, csrf_token, session_id, true);
+    let { token } = await getToken(code, csrf_token, session_id, true);
 
     cookies.set('api_token', token, {
         path: '/',
