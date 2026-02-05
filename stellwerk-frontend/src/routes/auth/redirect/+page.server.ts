@@ -4,9 +4,9 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ cookies, url }) => {
     let session_id = cookies.get('temp_sess_id');
-    cookies.delete('temp_sess_id', { path: '/auth/redirect' });
+    cookies.delete('temp_sess_id', { path: '/auth' });
     let redirect_path = cookies.get('redirect');
-    cookies.delete('redirect', { path: '/auth/redirect' });
+    cookies.delete('redirect', { path: '/auth' });
 
     let code = url.searchParams.get('code');
     let csrf_token = url.searchParams.get('state');
