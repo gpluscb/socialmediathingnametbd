@@ -1,3 +1,5 @@
+#![allow(clippy::disallowed_types)]
+
 use crate::server::ServerError;
 use aide::OperationIo;
 use axum::{
