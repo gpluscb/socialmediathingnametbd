@@ -12,10 +12,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use json::Json;
-use oauth2::{
-    HttpClientError, RequestTokenError,
-    basic::{BasicErrorResponse, BasicRevocationErrorResponse},
-};
+use oauth2::{HttpClientError, RequestTokenError, basic::BasicErrorResponse};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use stellwerk_common::model::{
@@ -30,7 +27,6 @@ mod json;
 mod query;
 mod routes;
 mod typed_path;
-mod validated;
 
 pub type ServerRouter = ApiRouter<ServerState>;
 
