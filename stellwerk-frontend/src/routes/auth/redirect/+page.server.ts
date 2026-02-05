@@ -12,9 +12,6 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
     let csrf_token = url.searchParams.get('state');
 
     if (!session_id || !code || !csrf_token) {
-        console.log(`sessid: ${session_id}`);
-        console.log(`code: ${code}`);
-        console.log(`state: ${csrf_token}`);
         error(500);
     }
 
