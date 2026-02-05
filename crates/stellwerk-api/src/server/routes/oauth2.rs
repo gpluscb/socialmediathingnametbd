@@ -20,6 +20,7 @@ use stellwerk_common::{
 };
 use stellwerk_db::client::DbClient;
 use time::{Duration, UtcDateTime, UtcOffset};
+use tracing::error;
 
 pub fn routes() -> ServerRouter {
     ServerRouter::new()
@@ -116,19 +117,26 @@ async fn get_token(
         .await?;
     let access_token = token_response.access_token();
 
-    // TODO: Maybe we should revoke if this fails also
     // Use auth provider token to verify identity
-    let user_id =
+    let user_id_result =
         get_identity_from_provider(&db, stored_oauth2_state.auth_provider, access_token.clone())
-            .await?
-            .ok_or(ServerError::OAuth2NoAssociatedUser)?;
+            .await;
 
-    // Auth provider token is useless after identity verification, revoke
-    auth_provider
-        .client
-        .revoke_token(access_token.into())?
-        .request_async(&oauth2_config.http_client)
-        .await?;
+    // Auth provider token is useless after identity verification, try to revoke
+    match auth_provider.client.revoke_token(access_token.into()) {
+        Ok(revocation_request) => {
+            if let Err(error) = revocation_request
+                .request_async(&oauth2_config.http_client)
+                .await
+            {
+                error!(%error, "Error executing token revocation");
+            }
+        }
+        Err(error) => error!(%error, "Revocation request configuration error"),
+    }
+
+    // Return on errors only after revoking
+    let user_id = user_id_result?.ok_or(ServerError::OAuth2NoAssociatedUser)?;
 
     // Generate new api token for user
     let random_token = AuthToken::generate_random(user_id);

@@ -83,11 +83,6 @@ pub enum ServerError {
     OAuth2RequestTokenError(
         #[from] RequestTokenError<HttpClientError<oauth2::reqwest::Error>, BasicErrorResponse>,
     ),
-    #[error("Requesting token from auth provider failed: {0}")]
-    OAuth2RevokeTokenError(
-        #[from]
-        RequestTokenError<HttpClientError<oauth2::reqwest::Error>, BasicRevocationErrorResponse>,
-    ),
     #[error("No user associated with the identity provided by auth provider")]
     OAuth2NoAssociatedUser,
     #[error("OAuth2 configuration error: {0}")]
@@ -118,7 +113,6 @@ impl ServerError {
             | ServerError::Database(_)
             | ServerError::OAuth2IdentityRetrieval(_)
             | ServerError::OAuth2RequestTokenError(_)
-            | ServerError::OAuth2RevokeTokenError(_)
             | ServerError::OAuth2Configuration(_)
             | ServerError::AuthTokenHash(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
