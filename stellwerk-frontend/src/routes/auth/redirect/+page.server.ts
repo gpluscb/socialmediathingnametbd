@@ -18,12 +18,12 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
         error(500);
     }
 
-    let { token } = await getToken(code, csrf_token, session_id, true);
+    let token_response = await getToken(code, csrf_token, session_id, true);
 
-    cookies.set('api_token', token, {
+    let expires_at = token_response.expires_at ? new Date(token_response.expires_at) : undefined;
+    cookies.set('api_token', token_response.token, {
         path: '/',
-        // TODO: From API response
-        maxAge: 60 * 60 * 48,
+        expires: expires_at,
         httpOnly: true,
         sameSite: true,
         // TODO: Make secure once tls is set up

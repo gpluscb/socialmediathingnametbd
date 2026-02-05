@@ -5,7 +5,10 @@ use oauth2::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use stellwerk_common::model::{id::Id, oauth2::OAuth2ProviderChoice, user::UserMarker};
+use stellwerk_common::{
+    json_schema_wrappers::JsonSchemaOffsetDateTime,
+    model::{id::Id, oauth2::OAuth2ProviderChoice, user::UserMarker},
+};
 use stellwerk_db::client::{DbClient, DbError};
 use thiserror::Error;
 
@@ -75,10 +78,11 @@ pub struct AuthUrlResponse {
     pub url: Url,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Default, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct AuthTokenResponse {
     pub token: String,
-    // TODO: Expires at
+    // TODO: Replace with UtcDateTime if https://github.com/GREsau/schemars/pull/472/ ever lands
+    pub expires_at: Option<JsonSchemaOffsetDateTime>,
 }
 
 #[derive(Debug, Error)]

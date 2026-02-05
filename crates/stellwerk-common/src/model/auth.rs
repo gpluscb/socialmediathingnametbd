@@ -1,6 +1,6 @@
 use crate::{
     model::{id::Id, user::UserMarker},
-    util::PositiveDuration,
+    positive_duration::PositiveDuration,
 };
 use argon2::{Algorithm, Argon2, Params, Version};
 use base64::{DecodeError, Engine, display::Base64Display, prelude::BASE64_STANDARD};

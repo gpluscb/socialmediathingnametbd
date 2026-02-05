@@ -7,7 +7,7 @@ pub mod user;
 
 use crate::{
     model::{auth::InvalidAuthTokenHashError, user::InvalidUserHandleError},
-    util::NonPositiveDurationError,
+    positive_duration::NonPositiveDurationError,
 };
 use ::oauth2::url;
 use thiserror::Error;

@@ -11,14 +11,15 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use std::{borrow::Cow, sync::Arc};
 use stellwerk_common::{
+    json_schema_wrappers::JsonSchemaOffsetDateTime,
     model::{
         auth::{AuthToken, Authentication},
         oauth2::{OAuth2ProviderChoice, OAuth2State},
     },
-    util::PositiveDuration,
+    positive_duration::PositiveDuration,
 };
 use stellwerk_db::client::DbClient;
-use time::{Duration, UtcDateTime};
+use time::{Duration, UtcDateTime, UtcOffset};
 
 pub fn routes() -> ServerRouter {
     ServerRouter::new()
@@ -140,17 +141,23 @@ async fn get_token(
         None
     };
 
+    let created_at = UtcDateTime::now();
+
     let authentication = Authentication {
         user: user_id,
         token_hash: hash,
-        created_at: UtcDateTime::now(),
+        created_at,
         expires_after,
     };
 
     // Store newly created authentication
     db.create_auth(&authentication).await?;
 
+    let expires_at = expires_after
+        .map(|expires_after| (created_at + expires_after.get()).to_offset(UtcOffset::UTC));
+
     Ok(Json(AuthTokenResponse {
         token: random_token.token_str(),
+        expires_at: expires_at.map(JsonSchemaOffsetDateTime),
     }))
 }

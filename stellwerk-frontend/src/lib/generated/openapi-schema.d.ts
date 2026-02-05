@@ -271,6 +271,7 @@ export interface components {
         /** @enum {string} */
         ApiKeyLocation: "query" | "header" | "cookie";
         AuthTokenResponse: {
+            expires_at?: components["schemas"]["UtcDateTime"] | null;
             token: string;
         };
         AuthUrlResponse: {
@@ -1628,6 +1629,8 @@ export interface components {
             handle: string;
             id: components["schemas"]["Id"];
         };
+        /** Format: date-time */
+        UtcDateTime: string;
     };
     responses: never;
     parameters: never;
