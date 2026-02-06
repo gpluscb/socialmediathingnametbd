@@ -28,7 +28,7 @@ enum InitError {
     #[error("Error loading configuration: {0}")]
     ConfigLoad(#[from] ReadConfigError),
     #[error("Error during OAuth2 setup: {0}")]
-    OAuth2Serup(#[from] OAuth2SetupError),
+    OAuth2Setup(#[from] OAuth2SetupError),
     #[error("Error binding tcp listener: {0}")]
     TcpBind(std::io::Error),
     #[error("Error serving server: {0}")]
