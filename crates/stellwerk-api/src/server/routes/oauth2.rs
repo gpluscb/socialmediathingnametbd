@@ -1,4 +1,5 @@
 use crate::{
+    login_logout::LoginLogoutService,
     oauth2::{AuthTokenResponse, AuthUrlResponse, OAuth2Service, get_identity_from_provider},
     server::{
         Result, ServerError, ServerRouter, json::Json, query::Query, typed_path::PathWrapper,
@@ -81,6 +82,7 @@ async fn get_token(
     PathWrapper(GetTokenPath {}): PathWrapper<GetTokenPath>,
     Query(params): Query<GetTokenParams>,
     State(oauth2_config): State<Arc<OAuth2Service>>,
+    State(login_logout_service): State<Arc<LoginLogoutService>>,
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<AuthTokenResponse>> {
     let code = AuthorizationCode::new(params.code);
@@ -138,34 +140,16 @@ async fn get_token(
     // Return on errors only after revoking
     let user_id = user_id_result?.ok_or(ServerError::OAuth2NoAssociatedUser)?;
 
-    // Generate new api token for user
-    let random_token = AuthToken::generate_random(user_id);
-    let hash = random_token.hash()?;
-
-    let expires_after = if params.expires {
-        // TODO: This duration should probably be configurable for the server
-        Some(PositiveDuration::new_unchecked(Duration::days(1)))
-    } else {
-        None
-    };
-
-    let created_at = UtcDateTime::now();
-
-    let authentication = Authentication {
-        user: user_id,
-        token_hash: hash,
-        created_at,
-        expires_after,
-    };
-
-    // Store newly created authentication
-    db.create_auth(&authentication).await?;
-
-    let expires_at = expires_after
-        .map(|expires_after| (created_at + expires_after.get()).to_offset(UtcOffset::UTC));
+    // Log in user
+    let login_data = login_logout_service
+        .login_user(&db, user_id, params.expires)
+        .await?;
 
     Ok(Json(AuthTokenResponse {
-        token: random_token.token_str(),
-        expires_at: expires_at.map(JsonSchemaOffsetDateTime),
+        token: login_data.token.token_str(),
+        expires_at: login_data
+            .expires_at
+            .map(|utc_date_time| utc_date_time.to_offset(UtcOffset::UTC))
+            .map(JsonSchemaOffsetDateTime),
     }))
 }

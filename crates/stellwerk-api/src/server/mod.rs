@@ -1,4 +1,5 @@
 use crate::{
+    login_logout::{LoginError, LoginLogoutService},
     oauth2::{OAuth2IdentityRetrievalError, OAuth2Service},
     server::auth::AuthenticationRejection,
 };
@@ -35,6 +36,7 @@ pub struct ServerState {
     pub db_client: Arc<DbClient>,
     pub open_api: Arc<OpenApi>,
     pub oauth2_service: Arc<OAuth2Service>,
+    pub login_logout_service: Arc<LoginLogoutService>,
 }
 
 pub fn routes() -> ServerRouter {
@@ -83,8 +85,8 @@ pub enum ServerError {
     OAuth2NoAssociatedUser,
     #[error("OAuth2 configuration error: {0}")]
     OAuth2Configuration(#[from] oauth2::ConfigurationError),
-    #[error(transparent)]
-    AuthTokenHash(#[from] AuthTokenHashError),
+    #[error("Error logging user in: {0}")]
+    LoginLogout(#[from] LoginError),
 }
 
 // TODO: Add docs for errors (maybe once https://github.com/tamasfe/aide/pull/263 lands?)
@@ -110,7 +112,7 @@ impl ServerError {
             | ServerError::OAuth2IdentityRetrieval(_)
             | ServerError::OAuth2RequestTokenError(_)
             | ServerError::OAuth2Configuration(_)
-            | ServerError::AuthTokenHash(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            | ServerError::LoginLogout(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

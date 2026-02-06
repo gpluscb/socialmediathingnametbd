@@ -97,4 +97,7 @@ auth_url = "https://discord.com/oauth2/authorize"
 token_url = "https://discord.com/api/v10/oauth2/token"
 revocation_url = "https://discord.com/api/v10/oauth2/token/revoke"
 scopes = ["identify"]
+
+[login_logout_config]
+expiring_token_duration_seconds = 86400 # One day
 ```

@@ -1,7 +1,10 @@
 use oauth2::{AuthUrl, ClientId, ClientSecret, RevocationUrl, Scope, TokenUrl};
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, path::Path};
-use stellwerk_common::snowflake::{ProcessId, WorkerId};
+use stellwerk_common::{
+    positive_duration::PositiveDuration,
+    snowflake::{ProcessId, WorkerId},
+};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -24,11 +27,19 @@ pub struct ApiConfig {
     pub database_url: String,
     pub worker_id: WorkerId,
     pub process_id: ProcessId,
-    pub oauth2_config: ApiOAuth2ProvidersListConfig,
+    pub oauth2_providers_config: ApiOAuth2ProvidersConfig,
+    pub login_logout_config: LoginLogoutConfig,
+}
+
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Default, Hash, Serialize, Deserialize,
+)]
+pub struct LoginLogoutConfig {
+    pub expiring_token_duration_seconds: PositiveDuration,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
-pub struct ApiOAuth2ProvidersListConfig {
+pub struct ApiOAuth2ProvidersConfig {
     pub discord: ApiOauth2ProviderConfig,
 }
 

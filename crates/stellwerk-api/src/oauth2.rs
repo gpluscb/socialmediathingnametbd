@@ -1,4 +1,4 @@
-use crate::config::ApiOAuth2ProvidersListConfig;
+use crate::config::ApiOAuth2ProvidersConfig;
 use oauth2::{
     AccessToken, EndpointNotSet, EndpointSet, Scope, basic::BasicClient, reqwest,
     reqwest::redirect::Policy, url::Url,
@@ -18,8 +18,8 @@ pub enum OAuth2SetupError {
     ReqwestConfig(#[from] reqwest::Error),
 }
 
-pub(super) fn get_oauth2_service(
-    config: ApiOAuth2ProvidersListConfig,
+pub fn get_oauth2_service(
+    config: ApiOAuth2ProvidersConfig,
 ) -> Result<OAuth2Service, OAuth2SetupError> {
     let config = OAuth2Service {
         providers: OAuth2ProviderList {

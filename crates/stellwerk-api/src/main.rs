@@ -1,7 +1,8 @@
 #![feature(duration_constructors)]
 
 mod config;
-pub mod oauth2;
+mod login_logout;
+mod oauth2;
 mod open_api;
 mod server;
 
@@ -131,7 +132,8 @@ async fn main() -> Result<(), InitError> {
 
     let db_client = Arc::new(connect_database(&config).await?);
     let mut open_api = open_api::install_open_api();
-    let oauth2_service = oauth2::get_oauth2_service(config.oauth2_config)?;
+    let oauth2_service = oauth2::get_oauth2_service(config.oauth2_providers_config)?;
+    let login_logout_service = login_logout::LoginLogoutService::new(config.login_logout_config);
 
     let tracing_layer = TraceLayer::new_for_http();
     let app = server::routes()
@@ -141,6 +143,7 @@ async fn main() -> Result<(), InitError> {
             db_client: Arc::clone(&db_client),
             open_api: Arc::new(open_api),
             oauth2_service: Arc::new(oauth2_service),
+            login_logout_service: Arc::new(login_logout_service),
         });
 
     let server_address = config.server_address;
