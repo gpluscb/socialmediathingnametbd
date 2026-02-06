@@ -90,7 +90,7 @@ database_url = "postgres://postgresuser:postgrespw@127.0.0.1/postgresdb"
 worker_id = 0
 process_id = 0
 
-[oauth2_config.discord]
+[oauth2_providers_config.discord]
 client_id = "332269999912132097"
 client_secret = "937it3ow87i4ery69876wqire"
 auth_url = "https://discord.com/oauth2/authorize"
