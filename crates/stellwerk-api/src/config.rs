@@ -27,7 +27,7 @@ pub struct ApiConfig {
     pub database_url: String,
     pub worker_id: WorkerId,
     pub process_id: ProcessId,
-    pub oauth2_providers_config: ApiOAuth2ProvidersConfig,
+    pub oauth2_providers_config: ApiOauth2ProvidersConfig,
     pub login_logout_config: LoginLogoutConfig,
 }
 
@@ -39,7 +39,7 @@ pub struct LoginLogoutConfig {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
-pub struct ApiOAuth2ProvidersConfig {
+pub struct ApiOauth2ProvidersConfig {
     pub discord: ApiOauth2ProviderConfig,
 }
 

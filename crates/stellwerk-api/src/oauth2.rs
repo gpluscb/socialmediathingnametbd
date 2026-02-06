@@ -1,4 +1,4 @@
-use crate::config::ApiOAuth2ProvidersConfig;
+use crate::config::ApiOauth2ProvidersConfig;
 use oauth2::{
     AccessToken, EndpointNotSet, EndpointSet, Scope, basic::BasicClient, reqwest,
     reqwest::redirect::Policy, url::Url,
@@ -7,13 +7,13 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use stellwerk_common::{
     json_schema_wrappers::JsonSchemaOffsetDateTime,
-    model::{id::Id, oauth2::OAuth2ProviderChoice, user::UserMarker},
+    model::{id::Id, oauth2::Oauth2ProviderChoice, user::UserMarker},
 };
 use stellwerk_db::client::{DbClient, DbError};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum OAuth2SetupError {
+pub enum Oauth2SetupError {
     #[error(transparent)]
     ReqwestConfig(#[from] reqwest::Error),
 }
@@ -22,16 +22,16 @@ pub type ProviderClient =
     BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointSet, EndpointSet>;
 
 #[derive(Clone, Debug)]
-pub struct OAuth2Service {
-    pub providers: OAuth2ProviderList,
+pub struct Oauth2Service {
+    pub providers: Oauth2ProviderList,
     pub http_client: reqwest::Client,
 }
 
-impl OAuth2Service {
-    pub fn new(config: ApiOAuth2ProvidersConfig) -> Result<Self, OAuth2SetupError> {
-        let config = OAuth2Service {
-            providers: OAuth2ProviderList {
-                discord: OAuth2Provider {
+impl Oauth2Service {
+    pub fn new(config: ApiOauth2ProvidersConfig) -> Result<Self, Oauth2SetupError> {
+        let config = Oauth2Service {
+            providers: Oauth2ProviderList {
+                discord: Oauth2Provider {
                     client: BasicClient::new(config.discord.client_id)
                         .set_client_secret(config.discord.client_secret)
                         .set_auth_uri(config.discord.auth_url)
@@ -49,21 +49,21 @@ impl OAuth2Service {
 }
 
 #[derive(Clone, Debug)]
-pub struct OAuth2Provider {
+pub struct Oauth2Provider {
     pub client: ProviderClient,
     pub scopes: Vec<Scope>,
 }
 
 #[derive(Clone, Debug)]
-pub struct OAuth2ProviderList {
-    pub discord: OAuth2Provider,
+pub struct Oauth2ProviderList {
+    pub discord: Oauth2Provider,
 }
 
-impl OAuth2ProviderList {
+impl Oauth2ProviderList {
     #[must_use]
-    pub fn get_provider(&self, provider_choice: OAuth2ProviderChoice) -> &OAuth2Provider {
+    pub fn get_provider(&self, provider_choice: Oauth2ProviderChoice) -> &Oauth2Provider {
         match provider_choice {
-            OAuth2ProviderChoice::Discord => &self.discord,
+            Oauth2ProviderChoice::Discord => &self.discord,
         }
     }
 }
@@ -81,7 +81,7 @@ pub struct AuthTokenResponse {
 }
 
 #[derive(Debug, Error)]
-pub enum OAuth2IdentityRetrievalError {
+pub enum Oauth2IdentityRetrievalError {
     #[error(transparent)]
     DiscordRequest(#[from] twilight_http::Error),
     #[error(transparent)]
@@ -94,18 +94,18 @@ pub enum OAuth2IdentityRetrievalError {
 
 pub async fn get_identity_from_provider(
     db: &DbClient,
-    oauth2provider_choice: OAuth2ProviderChoice,
+    oauth2provider_choice: Oauth2ProviderChoice,
     access_token: AccessToken,
-) -> Result<Option<Id<UserMarker>>, OAuth2IdentityRetrievalError> {
+) -> Result<Option<Id<UserMarker>>, Oauth2IdentityRetrievalError> {
     match oauth2provider_choice {
-        OAuth2ProviderChoice::Discord => get_identity_from_discord(db, access_token).await,
+        Oauth2ProviderChoice::Discord => get_identity_from_discord(db, access_token).await,
     }
 }
 
 pub async fn get_identity_from_discord(
     db: &DbClient,
     access_token: AccessToken,
-) -> Result<Option<Id<UserMarker>>, OAuth2IdentityRetrievalError> {
+) -> Result<Option<Id<UserMarker>>, Oauth2IdentityRetrievalError> {
     let authorization_info =
         twilight_http::Client::new(format!("Bearer {}", access_token.into_secret()))
             .current_authorization()
@@ -115,7 +115,7 @@ pub async fn get_identity_from_discord(
 
     let discord_id = authorization_info
         .user
-        .ok_or(OAuth2IdentityRetrievalError::DiscordResponseUserNotPresent)?
+        .ok_or(Oauth2IdentityRetrievalError::DiscordResponseUserNotPresent)?
         .id;
 
     let identity = db.fetch_oauth2_identity_discord(discord_id.get()).await?;

@@ -1,6 +1,6 @@
 use crate::{
     login_logout::LoginLogoutService,
-    oauth2::{AuthTokenResponse, AuthUrlResponse, OAuth2Service, get_identity_from_provider},
+    oauth2::{AuthTokenResponse, AuthUrlResponse, Oauth2Service, get_identity_from_provider},
     server::{
         Result, ServerError, ServerRouter, json::Json, query::Query, typed_path::PathWrapper,
     },
@@ -13,7 +13,7 @@ use serde::Deserialize;
 use std::{borrow::Cow, sync::Arc};
 use stellwerk_common::{
     json_schema_wrappers::JsonSchemaOffsetDateTime,
-    model::oauth2::{OAuth2ProviderChoice, OAuth2State},
+    model::oauth2::{Oauth2ProviderChoice, Oauth2State},
 };
 use stellwerk_db::client::DbClient;
 use time::{Duration, UtcDateTime, UtcOffset};
@@ -30,7 +30,7 @@ pub fn routes() -> ServerRouter {
 struct GetAuthUrlPath {}
 #[derive(Deserialize, JsonSchema)]
 struct GetAuthUrlParams {
-    provider: OAuth2ProviderChoice,
+    provider: Oauth2ProviderChoice,
     redirect: Url,
     session_id: String,
 }
@@ -38,7 +38,7 @@ struct GetAuthUrlParams {
 async fn get_oauth2_url(
     PathWrapper(GetAuthUrlPath {}): PathWrapper<GetAuthUrlPath>,
     Query(params): Query<GetAuthUrlParams>,
-    State(oauth2_config): State<Arc<OAuth2Service>>,
+    State(oauth2_config): State<Arc<Oauth2Service>>,
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<AuthUrlResponse>> {
     let oauth2_provider = oauth2_config.providers.get_provider(params.provider);
@@ -51,7 +51,7 @@ async fn get_oauth2_url(
         .add_scopes(oauth2_provider.scopes.iter().cloned())
         .url();
 
-    let oauth2_state = OAuth2State {
+    let oauth2_state = Oauth2State {
         session_id: params.session_id,
         auth_provider: params.provider,
         csrf_token,
@@ -77,7 +77,7 @@ struct GetTokenParams {
 async fn get_token(
     PathWrapper(GetTokenPath {}): PathWrapper<GetTokenPath>,
     Query(params): Query<GetTokenParams>,
-    State(oauth2_config): State<Arc<OAuth2Service>>,
+    State(oauth2_config): State<Arc<Oauth2Service>>,
     State(login_logout_service): State<Arc<LoginLogoutService>>,
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<AuthTokenResponse>> {
@@ -87,14 +87,14 @@ async fn get_token(
     let stored_oauth2_state = db
         .fetch_oauth2_state(&params.session_id)
         .await?
-        .ok_or_else(|| ServerError::OAuth2NoStateForSession(params.session_id.clone()))?;
+        .ok_or_else(|| ServerError::Oauth2NoStateForSession(params.session_id.clone()))?;
 
     if stored_oauth2_state.expires_at < UtcDateTime::now() {
-        return Err(ServerError::OAuth2NoStateForSession(params.session_id));
+        return Err(ServerError::Oauth2NoStateForSession(params.session_id));
     }
 
     if stored_oauth2_state.csrf_token != csrf_token {
-        return Err(ServerError::OAuth2WrongCsrfToken);
+        return Err(ServerError::Oauth2WrongCsrfToken);
     }
 
     // State has been used and can be deleted
@@ -134,7 +134,7 @@ async fn get_token(
     }
 
     // Return on errors only after revoking
-    let user_id = user_id_result?.ok_or(ServerError::OAuth2NoAssociatedUser)?;
+    let user_id = user_id_result?.ok_or(ServerError::Oauth2NoAssociatedUser)?;
 
     // Log in user
     let login_data = login_logout_service

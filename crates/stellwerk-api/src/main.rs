@@ -9,7 +9,7 @@ mod server;
 use crate::{
     config::{ApiConfig, ReadConfigError, read_config},
     login_logout::LoginLogoutService,
-    oauth2::{OAuth2Service, OAuth2SetupError},
+    oauth2::{Oauth2Service, Oauth2SetupError},
     server::ServerState,
 };
 use std::{path::Path, sync::Arc};
@@ -28,7 +28,7 @@ enum InitError {
     #[error("Error loading configuration: {0}")]
     ConfigLoad(#[from] ReadConfigError),
     #[error("Error during OAuth2 setup: {0}")]
-    OAuth2Setup(#[from] OAuth2SetupError),
+    Oauth2Setup(#[from] Oauth2SetupError),
     #[error("Error binding tcp listener: {0}")]
     TcpBind(std::io::Error),
     #[error("Error serving server: {0}")]
@@ -133,7 +133,7 @@ async fn main() -> Result<(), InitError> {
 
     let db_client = Arc::new(connect_database(&config).await?);
     let mut open_api = open_api::install_open_api();
-    let oauth2_service = OAuth2Service::new(config.oauth2_providers_config)?;
+    let oauth2_service = Oauth2Service::new(config.oauth2_providers_config)?;
     let login_logout_service = LoginLogoutService::new(config.login_logout_config);
 
     let tracing_layer = TraceLayer::new_for_http();
