@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM auth.oauth2_temp_states\n            WHERE oauth2_temp_states.expires_at < $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamp"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f2138fc7972a2dc574f33b9f55dd4dc1ff3bd2ffd2257e5fe56e1f406f21eb7f"
+}

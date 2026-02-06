@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO\n                auth.auth_tokens (user_snowflake, token_hash, created_at, expires_after_seconds)\n            VALUES\n                ($1, $2, $3, $4)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Bytea",
+        "Timestamp",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f3315ebeac3b78fa7e9fdd255913df5e56da741ebfd117a924d4fe80f4692a12"
+}

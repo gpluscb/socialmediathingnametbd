@@ -1,4 +1,7 @@
-use crate::server::auth::AuthenticationRejection;
+use crate::{
+    oauth2::{OAuth2Config, OAuth2IdentityRetrievalError},
+    server::auth::AuthenticationRejection,
+};
 use aide::{OperationOutput, axum::ApiRouter, openapi::OpenApi};
 use axum::{
     extract::{
@@ -9,9 +12,12 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use json::Json;
+use oauth2::{HttpClientError, RequestTokenError, basic::BasicErrorResponse};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use stellwerk_common::model::{id::Id, post::PostMarker, user::UserMarker};
+use stellwerk_common::model::{
+    auth::AuthTokenHashError, id::Id, post::PostMarker, user::UserMarker,
+};
 use stellwerk_db::client::{DbClient, DbError};
 use thiserror::Error;
 use tracing::error;
@@ -21,7 +27,6 @@ mod json;
 mod query;
 mod routes;
 mod typed_path;
-mod validated;
 
 pub type ServerRouter = ApiRouter<ServerState>;
 
@@ -29,6 +34,7 @@ pub type ServerRouter = ApiRouter<ServerState>;
 pub struct ServerState {
     pub db_client: Arc<DbClient>,
     pub open_api: Arc<OpenApi>,
+    pub oauth2_config: Arc<OAuth2Config>,
 }
 
 pub fn routes() -> ServerRouter {
@@ -41,6 +47,8 @@ pub async fn fallback(request: Request) -> ServerError {
 
 pub type Result<T, E = ServerError> = std::result::Result<T, E>;
 
+// TODO: Add some server error trait to allow for both private (#[error]) and public facing
+// descriptions as well as status code knowledge
 #[derive(Debug, Error)]
 pub enum ServerError {
     #[error("Unknown route requested: {0}")]
@@ -61,6 +69,22 @@ pub enum ServerError {
     PostByIdNotFound(Id<PostMarker>),
     #[error("User with id {0} was not found.")]
     UserByIdNotFound(Id<UserMarker>),
+    #[error("Identity could not be retrieved with OAuth2 provider: {0}")]
+    OAuth2IdentityRetrieval(#[from] OAuth2IdentityRetrievalError),
+    #[error("The OAuth2 temp states did not contain a state for the session id {0}")]
+    OAuth2NoStateForSession(String),
+    #[error("The provided csrf token was incorrect")]
+    OAuth2WrongCsrfToken,
+    #[error("Requesting token from auth provider failed: {0}")]
+    OAuth2RequestTokenError(
+        #[from] RequestTokenError<HttpClientError<oauth2::reqwest::Error>, BasicErrorResponse>,
+    ),
+    #[error("No user associated with the identity provided by auth provider")]
+    OAuth2NoAssociatedUser,
+    #[error("OAuth2 configuration error: {0}")]
+    OAuth2Configuration(#[from] oauth2::ConfigurationError),
+    #[error(transparent)]
+    AuthTokenHash(#[from] AuthTokenHashError),
 }
 
 // TODO: Add docs for errors (maybe once https://github.com/tamasfe/aide/pull/263 lands?)
@@ -76,12 +100,17 @@ impl ServerError {
             | ServerError::PathRejection(_)
             | ServerError::PostByIdNotFound(_)
             | ServerError::UserByIdNotFound(_) => StatusCode::NOT_FOUND,
-            ServerError::JsonRejection(_) | ServerError::QueryRejection(_) => {
-                StatusCode::BAD_REQUEST
-            }
-            ServerError::JsonResponse(_) | ServerError::Database(_) => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            ServerError::JsonRejection(_)
+            | ServerError::QueryRejection(_)
+            | ServerError::OAuth2NoStateForSession(_)
+            | ServerError::OAuth2WrongCsrfToken
+            | ServerError::OAuth2NoAssociatedUser => StatusCode::BAD_REQUEST,
+            ServerError::JsonResponse(_)
+            | ServerError::Database(_)
+            | ServerError::OAuth2IdentityRetrieval(_)
+            | ServerError::OAuth2RequestTokenError(_)
+            | ServerError::OAuth2Configuration(_)
+            | ServerError::AuthTokenHash(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

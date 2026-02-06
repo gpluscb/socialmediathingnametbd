@@ -1,9 +1,11 @@
 #![feature(duration_constructors)]
 
+pub mod oauth2;
 mod open_api;
 mod server;
 
 use crate::server::ServerState;
+use ::oauth2::{ClientId, ClientSecret};
 use serde::Deserialize;
 use std::{
     net::{IpAddr, SocketAddr},
@@ -34,6 +36,8 @@ enum InitError {
     DatabaseInitialization(DbError),
     #[error("A background task had issues: {0}")]
     Join(#[from] JoinError),
+    #[error("Crypto provider installation failed")]
+    CryptoProviderInstallation,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Deserialize)]
@@ -43,6 +47,16 @@ struct Env {
     database_url: Box<str>,
     worker_id: WorkerId,
     process_id: ProcessId,
+    oauth2_discord_client_id: ClientId,
+    oauth2_discord_client_secret: ClientSecret,
+}
+
+fn install_crypto_provider() -> Result<(), InitError> {
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .map_err(|_| InitError::CryptoProviderInstallation)?;
+
+    Ok(())
 }
 
 fn install_tracing() {
@@ -89,6 +103,12 @@ async fn db_prune_loop(db: Arc<DbClient>, cancellation: CancellationToken) {
             Ok(dropped_rows) => debug!("Dropped {dropped_rows} expired tokens"),
             Err(error) => error!(%error, "Error trying to drop expired tokens"),
         }
+
+        match db.drop_expired_oauth2_states().await {
+            Ok(dropped_rows) => debug!("Dropped {dropped_rows} expired oauth2 states"),
+            Err(error) => error!(%error, "Error trying to drop expired oauth2 states"),
+        }
+
         if cancellation
             .run_until_cancelled(tokio::time::sleep(std::time::Duration::from_days(1)))
             .await
@@ -136,8 +156,11 @@ async fn main() -> Result<(), InitError> {
     }
     let env = get_env()?;
 
+    install_crypto_provider()?;
+
     let db_client = Arc::new(connect_database(&env).await?);
     let mut open_api = open_api::install_open_api();
+    let oauth2_config = oauth2::get_oauth2_config(&env);
 
     let tracing_layer = TraceLayer::new_for_http();
     let app = server::routes()
@@ -146,6 +169,7 @@ async fn main() -> Result<(), InitError> {
         .with_state(ServerState {
             db_client: Arc::clone(&db_client),
             open_api: Arc::new(open_api),
+            oauth2_config: Arc::new(oauth2_config),
         });
 
     let server_address = SocketAddr::new(env.server_address, env.server_port);

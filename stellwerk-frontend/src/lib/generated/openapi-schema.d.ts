@@ -187,12 +187,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/oauth2/auth-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    provider: components["schemas"]["OAuth2ProviderChoice"];
+                    redirect: string;
+                    session_id: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AuthUrlResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth2/get-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    code: string;
+                    csrf_token: string;
+                    expires: boolean;
+                    session_id: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AuthTokenResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /** @enum {string} */
         ApiKeyLocation: "query" | "header" | "cookie";
+        AuthTokenResponse: {
+            expires_at?: components["schemas"]["UtcDateTime"] | null;
+            token: string;
+        };
+        AuthUrlResponse: {
+            /** Format: uri */
+            url: string;
+        };
         /**
          * @description Holds a set of reusable objects for different aspects of the OAS.
          *     All objects defined within the components object will have no effect
@@ -362,6 +447,18 @@ export interface components {
             url: string;
         } & {
             [key: string]: unknown;
+        };
+        GetAuthUrlParams: {
+            provider: components["schemas"]["OAuth2ProviderChoice"];
+            /** Format: uri */
+            redirect: string;
+            session_id: string;
+        };
+        GetTokenParams: {
+            code: string;
+            csrf_token: string;
+            expires: boolean;
+            session_id: string;
         };
         /**
          * @description The Header Object follows the structure of the Parameter Object with the
@@ -668,6 +765,8 @@ export interface components {
                 tokenUrl: string;
             };
         }) | unknown);
+        /** @enum {string} */
+        OAuth2ProviderChoice: "Discord";
         OpenApi: {
             /** @description An element to hold various schemas for the document. */
             components?: components["schemas"]["Components"] | null;
@@ -1530,6 +1629,8 @@ export interface components {
             handle: string;
             id: components["schemas"]["Id"];
         };
+        /** Format: date-time */
+        UtcDateTime: string;
     };
     responses: never;
     parameters: never;

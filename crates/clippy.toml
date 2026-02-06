@@ -1,0 +1,9 @@
+[[disallowed-types]]
+path = "axum::Json"
+reason = "Bad rejection"
+replacement = "stellwerk-api::server::json::Json"
+
+[[disallowed-types]]
+path = "axum::extract::Query"
+reason = "Bad rejection"
+replacement = "stellwerk-api::server::query::Query"

@@ -1,16 +1,19 @@
 use crate::server::{
     Result, ServerError, ServerRouter, auth::AuthenticatedUser, json::Json, query::Query,
-    typed_path::PathWrapper, validated::Validated,
+    typed_path::PathWrapper,
 };
 use axum::extract::State;
 use axum_extra::routing::TypedPath;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use std::sync::Arc;
-use stellwerk_common::model::{
-    id::Id,
-    pagination::PaginationReference,
-    post::{PartialPost, Post, PostContent, PostMarker},
+use stellwerk_common::{
+    model::{
+        id::Id,
+        pagination::PaginationReference,
+        post::{PartialPost, Post, PostContent, PostMarker},
+    },
+    validated::Validated,
 };
 use stellwerk_db::client::DbClient;
 use validator::Validate;

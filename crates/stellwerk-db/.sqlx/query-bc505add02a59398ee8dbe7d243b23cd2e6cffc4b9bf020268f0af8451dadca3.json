@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                users.user_snowflake,\n                users.oauth2_discord_id as \"oauth2_discord_id!\"\n            FROM\n                users.users\n            WHERE\n                oauth2_discord_id IS NOT NULL\n              AND\n                oauth2_discord_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_snowflake",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "users.users",
+            "name": "user_snowflake"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "oauth2_discord_id!",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "users.users",
+            "name": "oauth2_discord_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "bc505add02a59398ee8dbe7d243b23cd2e6cffc4b9bf020268f0af8451dadca3"
+}

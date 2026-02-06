@@ -16,6 +16,9 @@ const CLIENT = createClient<paths>({
 
 export type Post = components['schemas']['Post'];
 export type PaginationReference = components['schemas']['PaginationReference'];
+export type OAuth2ProviderChoice = components['schemas']['OAuth2ProviderChoice'];
+export type AuthUrlResponse = components['schemas']['AuthUrlResponse'];
+export type AuthTokenResponse = components['schemas']['AuthTokenResponse'];
 
 export async function getPost(id: string): Promise<Post | undefined> {
 	const response = await CLIENT.GET('/posts/{id}', {
@@ -38,6 +41,52 @@ export async function getRecentPosts(
 	const response = await CLIENT.GET('/posts/recent', {
 		params: {
 			query: { per_page: perPage, pagination_reference },
+		},
+	});
+
+	if (!response.data) {
+		error(500);
+	}
+
+	return response.data;
+}
+
+export async function getAuthUrl(
+	provider: OAuth2ProviderChoice,
+	redirect: URL,
+	session_id: string,
+): Promise<AuthUrlResponse> {
+	const response = await CLIENT.GET('/oauth2/auth-url', {
+		params: {
+			query: {
+				provider,
+				redirect: redirect.toString(),
+				session_id,
+			},
+		},
+	});
+
+	if (!response.data) {
+		error(500);
+	}
+
+	return response.data;
+}
+
+export async function getToken(
+	code: string,
+	csrf_token: string,
+	session_id: string,
+	expires: boolean,
+): Promise<AuthTokenResponse> {
+	const response = await CLIENT.GET('/oauth2/get-token', {
+		params: {
+			query: {
+				code,
+				csrf_token,
+				session_id,
+				expires,
+			},
 		},
 	});
 
