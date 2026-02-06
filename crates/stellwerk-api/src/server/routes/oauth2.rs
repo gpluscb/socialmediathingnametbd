@@ -1,5 +1,5 @@
 use crate::{
-    oauth2::{AuthTokenResponse, AuthUrlResponse, OAuth2Config, get_identity_from_provider},
+    oauth2::{AuthTokenResponse, AuthUrlResponse, OAuth2Service, get_identity_from_provider},
     server::{
         Result, ServerError, ServerRouter, json::Json, query::Query, typed_path::PathWrapper,
     },
@@ -41,7 +41,7 @@ struct GetAuthUrlParams {
 async fn get_oauth2_url(
     PathWrapper(GetAuthUrlPath {}): PathWrapper<GetAuthUrlPath>,
     Query(params): Query<GetAuthUrlParams>,
-    State(oauth2_config): State<Arc<OAuth2Config>>,
+    State(oauth2_config): State<Arc<OAuth2Service>>,
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<AuthUrlResponse>> {
     let oauth2_provider = oauth2_config.providers.get_provider(params.provider);
@@ -80,7 +80,7 @@ struct GetTokenParams {
 async fn get_token(
     PathWrapper(GetTokenPath {}): PathWrapper<GetTokenPath>,
     Query(params): Query<GetTokenParams>,
-    State(oauth2_config): State<Arc<OAuth2Config>>,
+    State(oauth2_config): State<Arc<OAuth2Service>>,
     State(db): State<Arc<DbClient>>,
 ) -> Result<Json<AuthTokenResponse>> {
     let code = AuthorizationCode::new(params.code);

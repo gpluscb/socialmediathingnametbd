@@ -1,7 +1,7 @@
-use crate::Env;
+use crate::config::ApiOAuth2ProvidersListConfig;
 use oauth2::{
-    AccessToken, AuthUrl, EndpointNotSet, EndpointSet, RevocationUrl, Scope, TokenUrl,
-    basic::BasicClient, reqwest, reqwest::redirect::Policy, url::Url,
+    AccessToken, EndpointNotSet, EndpointSet, Scope, basic::BasicClient, reqwest,
+    reqwest::redirect::Policy, url::Url,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -12,43 +12,38 @@ use stellwerk_common::{
 use stellwerk_db::client::{DbClient, DbError};
 use thiserror::Error;
 
-// TODO: Maybe a way to deserialize from toml?
-#[must_use]
-pub(super) fn get_oauth2_config(env: &Env) -> OAuth2Config {
-    // TODO: Get rid of unwraps here
-    OAuth2Config {
+#[derive(Debug, Error)]
+pub enum OAuth2SetupError {
+    #[error(transparent)]
+    ReqwestConfig(#[from] reqwest::Error),
+}
+
+pub(super) fn get_oauth2_service(
+    config: ApiOAuth2ProvidersListConfig,
+) -> Result<OAuth2Service, OAuth2SetupError> {
+    let config = OAuth2Service {
         providers: OAuth2ProviderList {
             discord: OAuth2Provider {
-                client: BasicClient::new(env.oauth2_discord_client_id.clone())
-                    .set_client_secret(env.oauth2_discord_client_secret.clone())
-                    .set_auth_uri(
-                        AuthUrl::new("https://discord.com/oauth2/authorize".to_string()).unwrap(),
-                    )
-                    .set_token_uri(
-                        TokenUrl::new("https://discord.com/api/v10/oauth2/token".to_string())
-                            .unwrap(),
-                    )
-                    .set_revocation_url(
-                        RevocationUrl::new(
-                            "https://discord.com/api/v10/oauth2/token/revoke".to_string(),
-                        )
-                        .unwrap(),
-                    ),
-                scopes: vec![Scope::new("identify".to_string())],
+                client: BasicClient::new(config.discord.client_id)
+                    .set_client_secret(config.discord.client_secret)
+                    .set_auth_uri(config.discord.auth_url)
+                    .set_token_uri(config.discord.token_url)
+                    .set_revocation_url(config.discord.revocation_url),
+                scopes: config.discord.scopes,
             },
         },
         http_client: reqwest::Client::builder()
             .redirect(Policy::none())
-            .build()
-            .unwrap(),
-    }
+            .build()?,
+    };
+    Ok(config)
 }
 
 pub type ProviderClient =
     BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointSet, EndpointSet>;
 
 #[derive(Clone, Debug)]
-pub struct OAuth2Config {
+pub struct OAuth2Service {
     pub providers: OAuth2ProviderList,
     pub http_client: reqwest::Client,
 }

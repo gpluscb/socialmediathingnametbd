@@ -1,17 +1,16 @@
 #![feature(duration_constructors)]
 
+mod config;
 pub mod oauth2;
 mod open_api;
 mod server;
 
-use crate::server::ServerState;
-use ::oauth2::{ClientId, ClientSecret};
-use serde::Deserialize;
-use std::{
-    net::{IpAddr, SocketAddr},
-    sync::Arc,
+use crate::{
+    config::{ApiConfig, ReadConfigError, read_config},
+    oauth2::OAuth2SetupError,
+    server::ServerState,
 };
-use stellwerk_common::snowflake::{ProcessId, WorkerId};
+use std::{path::Path, sync::Arc};
 use stellwerk_db::client::{DbClient, DbError};
 use thiserror::Error;
 use tokio::{signal, signal::unix::SignalKind, task::JoinError};
@@ -22,10 +21,12 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Error)]
 enum InitError {
-    #[error("Error parsing .env file: {0}")]
-    Dotenv(#[from] dotenvy::Error),
-    #[error("Error parsing environment: {0}")]
-    Envy(#[from] envy::Error),
+    #[error("STELLWERK_API_CONFIG_FILE environment variable did not exist")]
+    NoConfigEnvVar,
+    #[error("Error loading configuration: {0}")]
+    ConfigLoad(#[from] ReadConfigError),
+    #[error("Error during OAuth2 setup: {0}")]
+    OAuth2Serup(#[from] OAuth2SetupError),
     #[error("Error binding tcp listener: {0}")]
     TcpBind(std::io::Error),
     #[error("Error serving server: {0}")]
@@ -38,17 +39,6 @@ enum InitError {
     Join(#[from] JoinError),
     #[error("Crypto provider installation failed")]
     CryptoProviderInstallation,
-}
-
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Deserialize)]
-struct Env {
-    server_address: IpAddr,
-    server_port: u16,
-    database_url: Box<str>,
-    worker_id: WorkerId,
-    process_id: ProcessId,
-    oauth2_discord_client_id: ClientId,
-    oauth2_discord_client_secret: ClientSecret,
 }
 
 fn install_crypto_provider() -> Result<(), InitError> {
@@ -74,24 +64,7 @@ fn install_tracing() {
         .init();
 }
 
-/// Returns whether a dotenv file was found or not
-fn install_dotenv() -> Result<bool, InitError> {
-    if let Err(e) = dotenvy::dotenv() {
-        if e.not_found() {
-            Ok(false)
-        } else {
-            Err(e.into())
-        }
-    } else {
-        Ok(true)
-    }
-}
-
-fn get_env() -> Result<Env, InitError> {
-    envy::from_env().map_err(InitError::from)
-}
-
-async fn connect_database(env: &Env) -> Result<DbClient, InitError> {
+async fn connect_database(env: &ApiConfig) -> Result<DbClient, InitError> {
     DbClient::connect_and_migrate(&env.database_url, env.worker_id, env.process_id)
         .await
         .map_err(InitError::DatabaseInitialization)
@@ -149,18 +122,16 @@ fn await_shutdown() -> Result<impl Future<Output = ()>, InitError> {
 
 #[tokio::main]
 async fn main() -> Result<(), InitError> {
-    let dotenv_found = install_dotenv()?;
     install_tracing();
-    if !dotenv_found {
-        debug!("No .env file found");
-    }
-    let env = get_env()?;
-
     install_crypto_provider()?;
 
-    let db_client = Arc::new(connect_database(&env).await?);
+    let config_path =
+        std::env::var_os("STELLWERK_API_CONFIG_FILE").ok_or(InitError::NoConfigEnvVar)?;
+    let config = read_config(Path::new(&config_path))?;
+
+    let db_client = Arc::new(connect_database(&config).await?);
     let mut open_api = open_api::install_open_api();
-    let oauth2_config = oauth2::get_oauth2_config(&env);
+    let oauth2_service = oauth2::get_oauth2_service(config.oauth2_config)?;
 
     let tracing_layer = TraceLayer::new_for_http();
     let app = server::routes()
@@ -169,10 +140,10 @@ async fn main() -> Result<(), InitError> {
         .with_state(ServerState {
             db_client: Arc::clone(&db_client),
             open_api: Arc::new(open_api),
-            oauth2_config: Arc::new(oauth2_config),
+            oauth2_service: Arc::new(oauth2_service),
         });
 
-    let server_address = SocketAddr::new(env.server_address, env.server_port);
+    let server_address = config.server_address;
     let listener = tokio::net::TcpListener::bind(server_address)
         .await
         .map_err(InitError::TcpBind)?;
