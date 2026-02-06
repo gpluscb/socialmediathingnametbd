@@ -18,27 +18,6 @@ pub enum OAuth2SetupError {
     ReqwestConfig(#[from] reqwest::Error),
 }
 
-pub fn get_oauth2_service(
-    config: ApiOAuth2ProvidersConfig,
-) -> Result<OAuth2Service, OAuth2SetupError> {
-    let config = OAuth2Service {
-        providers: OAuth2ProviderList {
-            discord: OAuth2Provider {
-                client: BasicClient::new(config.discord.client_id)
-                    .set_client_secret(config.discord.client_secret)
-                    .set_auth_uri(config.discord.auth_url)
-                    .set_token_uri(config.discord.token_url)
-                    .set_revocation_url(config.discord.revocation_url),
-                scopes: config.discord.scopes,
-            },
-        },
-        http_client: reqwest::Client::builder()
-            .redirect(Policy::none())
-            .build()?,
-    };
-    Ok(config)
-}
-
 pub type ProviderClient =
     BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointSet, EndpointSet>;
 
@@ -46,6 +25,27 @@ pub type ProviderClient =
 pub struct OAuth2Service {
     pub providers: OAuth2ProviderList,
     pub http_client: reqwest::Client,
+}
+
+impl OAuth2Service {
+    pub fn new(config: ApiOAuth2ProvidersConfig) -> Result<Self, OAuth2SetupError> {
+        let config = OAuth2Service {
+            providers: OAuth2ProviderList {
+                discord: OAuth2Provider {
+                    client: BasicClient::new(config.discord.client_id)
+                        .set_client_secret(config.discord.client_secret)
+                        .set_auth_uri(config.discord.auth_url)
+                        .set_token_uri(config.discord.token_url)
+                        .set_revocation_url(config.discord.revocation_url),
+                    scopes: config.discord.scopes,
+                },
+            },
+            http_client: reqwest::Client::builder()
+                .redirect(Policy::none())
+                .build()?,
+        };
+        Ok(config)
+    }
 }
 
 #[derive(Clone, Debug)]

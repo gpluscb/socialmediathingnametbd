@@ -8,7 +8,8 @@ mod server;
 
 use crate::{
     config::{ApiConfig, ReadConfigError, read_config},
-    oauth2::OAuth2SetupError,
+    login_logout::LoginLogoutService,
+    oauth2::{OAuth2Service, OAuth2SetupError},
     server::ServerState,
 };
 use std::{path::Path, sync::Arc};
@@ -132,8 +133,8 @@ async fn main() -> Result<(), InitError> {
 
     let db_client = Arc::new(connect_database(&config).await?);
     let mut open_api = open_api::install_open_api();
-    let oauth2_service = oauth2::get_oauth2_service(config.oauth2_providers_config)?;
-    let login_logout_service = login_logout::LoginLogoutService::new(config.login_logout_config);
+    let oauth2_service = OAuth2Service::new(config.oauth2_providers_config)?;
+    let login_logout_service = LoginLogoutService::new(config.login_logout_config);
 
     let tracing_layer = TraceLayer::new_for_http();
     let app = server::routes()

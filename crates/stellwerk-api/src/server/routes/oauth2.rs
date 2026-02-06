@@ -13,11 +13,7 @@ use serde::Deserialize;
 use std::{borrow::Cow, sync::Arc};
 use stellwerk_common::{
     json_schema_wrappers::JsonSchemaOffsetDateTime,
-    model::{
-        auth::{AuthToken, Authentication},
-        oauth2::{OAuth2ProviderChoice, OAuth2State},
-    },
-    positive_duration::PositiveDuration,
+    model::oauth2::{OAuth2ProviderChoice, OAuth2State},
 };
 use stellwerk_db::client::DbClient;
 use time::{Duration, UtcDateTime, UtcOffset};
